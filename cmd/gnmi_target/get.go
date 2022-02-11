@@ -43,17 +43,17 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	log.Infof("The incoming get request contains: %s", req.String())
 	//dataConv.Convert(req, "Get")
 
-	// const counter = `<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
-	// <interface>
-	//   <name>sw0p5</name>
-	//   <max-sdu-table xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched">
-	// 	  <traffic-class>0</traffic-class>
-	// 	  <queue-max-sdu>500</queue-max-sdu>
-	//   </max-sdu-table>
-	// </interface>
-	// </interfaces>`
-	// log.Infof(sb.GetConfig(counter).Data)
-	log.Infof(sb.GetFullConfig().Data)
+	const counter = `<get>
+						<filter xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
+							<port>
+								<name>sw0p2</name>
+								<rx-statistics>
+								</rx-statistics>
+							</port>
+						</filter>
+					</get>`
+	log.Infof(sb.GetConfig(counter).Data)
+	// log.Infof(sb.GetFullConfig().Data)
 
 	notifications := make([]*gnmi.Notification, 1)
 	prefix := req.GetPrefix()
