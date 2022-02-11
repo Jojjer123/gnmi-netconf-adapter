@@ -51,9 +51,9 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	// 						</rx-statistics>
 	// 					</port>
 	// 				</lldp>`
-	const counter = `<ncm xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring">
-						<netconf-state/>
-					</ncm>`
+	const counter = `<netconf-state xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring">
+						<statistics/>
+					</netconf-state>`
 	log.Infof(sb.GetConfig(counter).Data)
 	// log.Infof(sb.GetFullConfig().Data)
 
