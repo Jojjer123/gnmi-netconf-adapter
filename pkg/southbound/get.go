@@ -11,7 +11,8 @@ func GetFullConfig() *netconf.RPCReply {
 
 // Requests partial configuration according to the xmlRequest for the target "running"
 func GetConfig(xmlRequest string) *netconf.RPCReply {
-	reply := sendRPCRequest(netconf.MethodGetConfig("running"))
+	// reply := sendRPCRequest(netconf.MethodGetConfig("running"))
+	reply := sendRPCRequest(getPartialConfig("running", xmlRequest))
 
 	return reply
 }

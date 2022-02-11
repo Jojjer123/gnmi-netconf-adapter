@@ -54,3 +54,7 @@ func methodEditConfig(database string, dataXml string) netconf.RawMethod {
 
 	return netconf.RawMethod(fmt.Sprintf(editConfigXml, database, dataXml))
 }
+
+func getPartialConfig(source string, filter string) netconf.RawMethod {
+	return netconf.RawMethod(fmt.Sprintf("<get-config><source><%s/></source><filter>%s</filter></get-config>", source, filter))
+}
