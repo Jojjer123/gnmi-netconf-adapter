@@ -43,14 +43,15 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	log.Infof("The incoming get request contains: %s", req.String())
 	//dataConv.Convert(req, "Get")
 
-	const counter = `<lldp xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
-						<port>
-							<name>sw0p2</name>
-							<rx-statistics>
-								<total-frames/>
-							</rx-statistics>
-						</port>
-					</lldp>`
+	// const counter = `<lldp xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
+	// 					<port>
+	// 						<name>sw0p2</name>
+	// 						<rx-statistics>
+	// 							<total-frames/>
+	// 						</rx-statistics>
+	// 					</port>
+	// 				</lldp>`
+	const counter = ``
 	log.Infof(sb.GetConfig(counter).Data)
 	// log.Infof(sb.GetFullConfig().Data)
 
