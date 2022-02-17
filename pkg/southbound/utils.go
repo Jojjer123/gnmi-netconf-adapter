@@ -55,6 +55,14 @@ func methodEditConfig(database string, dataXml string) netconf.RawMethod {
 	return netconf.RawMethod(fmt.Sprintf(editConfigXml, database, dataXml))
 }
 
-func getPartialConfig(source string, filter string) netconf.RawMethod {
-	return netconf.RawMethod(fmt.Sprintf("<get><filter type=\"subtree\">%s</filter></get>", filter))
+func getPartialConfig(filter string) netconf.RawMethod {
+	request := ""
+	if filter != "" {
+		request = fmt.Sprintf("<get><filter type=\"subtree\">%s</filter></get>", filter)
+	} else {
+		request = fmt.Sprintf("<get/>")
+	}
+
+	// fmt.Sprintf("<get><filter type=\"subtree\">%s</filter></get>", filter)
+	return netconf.RawMethod(request)
 }

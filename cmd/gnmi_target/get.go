@@ -56,7 +56,7 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	// 					<statistics/>
 	// 				</netconf-state>`
 
-	const counter = `<data/>`
+	const counter = ``
 
 	log.Infof(sb.GetConfig(counter).Data)
 	// log.Infof(sb.GetFullConfig().Data)
