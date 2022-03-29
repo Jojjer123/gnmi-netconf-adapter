@@ -2,7 +2,6 @@ package southbound
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/Juniper/go-netconf/netconf"
@@ -36,9 +35,9 @@ func GetConfig(section, format string) (string, error) {
 	// if section == "interfaces" {
 	// command += "</source><filter><interfaces xmlns=\"urn:ietf:params:xml:ns:yang:ietf-interfaces\"><interface/></interfaces></filter></get-config>"
 	// }
-	fmt.Println("number of secs = " + strconv.Itoa(nSecs))
+	// fmt.Println("number of secs = " + strconv.Itoa(nSecs))
 	if nSecs > 1 {
-		fmt.Println("in the loop")
+		// fmt.Println("in the loop")
 		command += "</source><filter>"
 		for i := 0; i < nSecs-1; i++ {
 			command += fmt.Sprintf("<%s xmlns=\"urn:ietf:params:xml:ns:yang:ietf-interfaces\">", secs[i])

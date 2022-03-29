@@ -37,7 +37,7 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	Implementation of data conversion should be initiated here.
 	***********************************************************/
 	// Example of data conversion initiation
-	log.Infof("The incoming get request contains: %s", req.String())
+	// log.Infof("The incoming get request contains: %s", req.String())
 	// dataConv.ConvertGetReqtoXML(req)
 	response := dataConv.ConvertAndSendReq(req)
 

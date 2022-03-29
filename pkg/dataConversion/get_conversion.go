@@ -19,6 +19,11 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 	//GetConfig("interfaces>interface", "running")
 	// fmt.Println(sb.GetFullConfig())
 
+	// TODO: Parse req and send path to sb.GetConfig(), might be good to change the input-params
+	// in order to be more general and with less conversion of path.
+
+	getRequestedPath(req)
+
 	reply, err := sb.GetConfig("full", "running")
 
 	// If southbound fails to get config, return empty response
@@ -36,6 +41,32 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 	return convertXMLtoGnmiResponse(reply)
 }
 
+func getRequestedPath(req *gnmi.GetRequest) (string, string, error) {
+	requestedPath := ""
+	requestedDatastore := ""
+
+	switch req.Type {
+	case gnmi.GetRequest_ALL:
+
+	case gnmi.GetRequest_CONFIG:
+		requestedDatastore = "running"
+	case gnmi.GetRequest_STATE:
+
+	case gnmi.GetRequest_OPERATIONAL:
+
+	default:
+		log.Warn("Request type not recognized!")
+	}
+
+	for _, path := range req.Path {
+		for _, pathElem := range path.Elem {
+			fmt.Println(pathElem.Name)
+		}
+	}
+
+	return requestedPath, requestedDatastore, nil
+}
+
 type Schema struct {
 	Entries []SchemaEntry
 }
@@ -48,13 +79,13 @@ type SchemaEntry struct {
 }
 
 func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
-	log.Info("Converting XML to GNMI response...")
+	// log.Info("Converting XML to GNMI response...")
 	schema := netconfConv(xml)
 
 	jsonDump, err := json.Marshal(schema)
 	if err != nil {
-		fmt.Println("Failed to serialize schema!")
-		fmt.Println(err)
+		log.Warn("Failed to serialize schema!", err)
+		// fmt.Println(err)
 	}
 
 	notifications := []*gnmi.Notification{
@@ -117,8 +148,8 @@ func netconfConv(xmlString string) *Schema {
 			schema.Entries[index-1].Value = string([]byte(bytes))
 
 		default:
-			fmt.Print(", was not recognized with type: ")
-			fmt.Println(tokType)
+			log.Warnf("Token type was not recognized with type: %v", tokType)
+			// fmt.Println(tokType)
 		}
 	}
 }

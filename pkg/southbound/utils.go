@@ -54,7 +54,6 @@ func sendRPCRequest(fn netconf.RPCMethod) *netconf.RPCReply {
 // Method is necessary for version v.0.1.1 of https://pkg.go.dev/github.com/juniper/go-netconf/netconf as the code implementing it is not in release
 // MethodEditConfig sends a NETCONF edit-config request to the network device
 func methodEditConfig(database string, dataXml string) netconf.RawMethod {
-
-	log.Infof("methodEditconfig/sb/utils.go")
+	// log.Infof("methodEditconfig/sb/utils.go")
 	return netconf.RawMethod(fmt.Sprintf(editConfigXml, database, dataXml))
 }
