@@ -21,9 +21,12 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 	// TODO: Parse req and send path to sb.GetConfig(), might be good to change the input-params
 	// in order to be more general and with less conversion of path.
 
-	getRequestedPath(req)
+	path, datastore, err := getRequestedPath(req)
+	if err != nil {
+		log.Warnf("Failed to get request path and datastore, %v", err)
+	}
 
-	reply, err := sb.GetConfig("full", "running")
+	reply, err := sb.GetConfig(path, datastore)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
@@ -62,7 +65,11 @@ func getRequestedPath(req *gnmi.GetRequest) (string, string, error) {
 
 	for _, path := range req.Path {
 		for _, pathElem := range path.Elem {
-			log.Info(pathElem.Name)
+			// log.Info(pathElem.Name)
+			if requestedPath != "" {
+				requestedPath += ">"
+			}
+			requestedPath += pathElem.Name
 		}
 	}
 
