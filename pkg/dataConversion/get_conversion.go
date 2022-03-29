@@ -19,10 +19,10 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 	//GetConfig("interfaces>interface", "running")
 	// fmt.Println(sb.GetFullConfig())
 
-	reply := sb.GetFullConfig()
+	reply, err := sb.GetConfig("full", "running")
 
 	// If southbound fails to get config, return empty response
-	if reply == nil {
+	if err != nil {
 		notifications := make([]*gnmi.Notification, 1)
 		ts := time.Now().UnixNano()
 
@@ -33,7 +33,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 		return &gnmi.GetResponse{Notification: notifications}
 	}
 
-	return convertXMLtoGnmiResponse(reply.Data)
+	return convertXMLtoGnmiResponse(reply)
 }
 
 type Schema struct {
