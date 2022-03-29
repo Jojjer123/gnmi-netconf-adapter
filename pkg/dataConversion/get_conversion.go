@@ -27,6 +27,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 	}
 
 	reply, err := sb.GetConfig(path, datastore)
+	log.Info(reply)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
