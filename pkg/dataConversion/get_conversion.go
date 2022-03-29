@@ -46,12 +46,15 @@ func getRequestedPath(req *gnmi.GetRequest) (string, string, error) {
 
 	switch req.Type {
 	case gnmi.GetRequest_ALL:
-
+		log.Infof("Type: ALL")
 	case gnmi.GetRequest_CONFIG:
+		log.Infof("Type: CONFIG")
 		requestedDatastore = "running"
 	case gnmi.GetRequest_STATE:
+		log.Infof("Type: STATE")
 
 	case gnmi.GetRequest_OPERATIONAL:
+		log.Infof("Type: OPERATIONAL")
 
 	default:
 		log.Warn("Request type not recognized!")
