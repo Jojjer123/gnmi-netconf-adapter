@@ -15,8 +15,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/google/gnxi/utils/credentials"
 	dataConv "github.com/onosproject/gnmi-netconf-adapter/pkg/dataConversion"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -40,19 +38,21 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	***********************************************************/
 	// Example of data conversion initiation
 	log.Infof("The incoming get request contains: %s", req.String())
-	dataConv.ConvertGetReqtoXML(req)
+	// dataConv.ConvertGetReqtoXML(req)
+	response := dataConv.ConvertAndSendReq(req)
 
-	notifications := make([]*gnmi.Notification, 1)
-	prefix := req.GetPrefix()
-	ts := time.Now().UnixNano()
+	// notifications := make([]*gnmi.Notification, 1)
+	// prefix := req.GetPrefix()
+	// ts := time.Now().UnixNano()
 
-	notifications[0] = &gnmi.Notification{
-		Timestamp: ts,
-		Prefix:    prefix,
-	}
+	// notifications[0] = &gnmi.Notification{
+	// 	Timestamp: ts,
+	// 	Prefix:    prefix,
+	// }
 
-	resp := &gnmi.GetResponse{Notification: notifications}
+	// resp := &gnmi.GetResponse{Notification: notifications}
 
-	return resp, nil
+	// return resp, nil
+	return response, nil
 	// return s.Server.Get(ctx, req)
 }

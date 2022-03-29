@@ -22,7 +22,7 @@ var log = logging.GetLogger("main")
 // Takes in an RPCMethod function and executes it, then returns the reply from the network device
 func sendRPCRequest(fn netconf.RPCMethod) *netconf.RPCReply {
 	//  Define config for connection to network device
-	log.Infof("sendRPC/sb/utils.go")
+	// log.Infof("sendRPC/sb/utils.go")
 	sshConfig := &ssh.ClientConfig{
 		User:            "root",
 		Auth:            []ssh.AuthMethod{ssh.Password("")},
@@ -32,18 +32,19 @@ func sendRPCRequest(fn netconf.RPCMethod) *netconf.RPCReply {
 	//  Start connection to network device
 	s, err := netconf.DialSSH(switchAddr, sshConfig)
 
+	var reply *netconf.RPCReply
 	if err != nil {
-		log.Fatal(err)
-	}
+		log.Warn(err)
+	} else {
+		// Executes the function passed as fn
+		reply, err = s.Exec(fn)
 
-	// Close connetion to network device when this function is done executing
-	defer s.Close()
+		if err != nil {
+			log.Warn(err)
+		}
 
-	// Executes the function passed as fn
-	reply, err := s.Exec(fn)
-
-	if err != nil {
-		panic(err)
+		// Close connetion to network device when this function is done executing
+		defer s.Close()
 	}
 
 	return reply
