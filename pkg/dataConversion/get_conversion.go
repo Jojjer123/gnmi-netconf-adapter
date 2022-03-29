@@ -3,7 +3,6 @@ package dataConversion
 import (
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"strings"
 	"time"
 
@@ -60,7 +59,7 @@ func getRequestedPath(req *gnmi.GetRequest) (string, string, error) {
 
 	for _, path := range req.Path {
 		for _, pathElem := range path.Elem {
-			fmt.Println(pathElem.Name)
+			log.Info(pathElem.Name)
 		}
 	}
 
