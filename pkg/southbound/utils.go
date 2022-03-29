@@ -29,12 +29,13 @@ func sendRPCRequest(fn netconf.RPCMethod) *netconf.RPCReply {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
-	//  Start connection to network device
+	// Start connection to network device
 	s, err := netconf.DialSSH(switchAddr, sshConfig)
 
 	var reply *netconf.RPCReply
 	if err != nil {
 		log.Warn(err)
+		return nil
 	} else {
 		// Executes the function passed as fn
 		reply, err = s.Exec(fn)
