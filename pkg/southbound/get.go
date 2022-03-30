@@ -86,7 +86,8 @@ func GetConfig(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataTy
 	for _, path := range paths {
 		for index, elem := range path.Elem {
 			if index == 0 {
-				cmd += "<filter type=\"subtree\">"
+				cmd += "<filter>" // type=\"subtree\">"
+				endOfCmd = "</filter>"
 			}
 			cmd += fmt.Sprintf("<%s", elem.Name)
 			endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
