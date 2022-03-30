@@ -12,13 +12,6 @@ func GetFullConfig() *netconf.RPCReply {
 	return reply
 }
 
-// // Requests partial configuration according to the xmlRequest for the target "running"
-// func GetConfig(xmlRequest string) *netconf.RPCReply {
-// 	reply := sendRPCRequest(netconf.Meth("<running /></source><filter><interfaces xmlns=\"urn:ietf:params:xml:ns:yang:ietf-interfaces\"><interface/></interfaces></filter>"))
-
-// 	return reply
-// }
-
 // GetConfig returns the full configuration, or configuration starting at <section>.
 // <format> can be one of "text" or "xml." You can do sub-sections by separating the
 // <section> path with a ">" symbol, i.e. "system>login" or "protocols>ospf>area".

@@ -12,26 +12,13 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
-func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequest, typeOfRequest string) {
-
-	/************************************************************
-	Implementation of data conversion should be implemented here.
-	*************************************************************/
-	//GetConfig("interfaces>interface", "running")
-	// fmt.Println(sb.GetFullConfig())
-
-	// TODO: Parse req and send path to sb.GetConfig(), might be good to change the input-params
-	// in order to be more general and with less conversion of path.
-	path, datastore, err := getRequestedPath(req)
+func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
+	datastore, err := getRequestedDatastore(req)
 	if err != nil {
-		log.Warnf("Failed to get request path and datastore, %v", err)
+		log.Warnf("Failed to get datastore requested, %v", err)
 	}
 
-	xmlRequest := getXMLRequest(path, datastore, req.Type)
-
-	// reply, err := sb.GetConfig(path, datastore, req.Type)
-	// log.Info(reply)
-
+	xmlRequest := getXMLRequest(req.Path, datastore, req.Type)
 	reply, err := sb.GetConfig(xmlRequest)
 
 	// If southbound fails to get config, return empty response
@@ -50,42 +37,29 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 	return convertXMLtoGnmiResponse(reply)
 }
 
-func getRequestedPath(req *gnmi.GetRequest) ([]*gnmi.Path, string, error) {
-	// requestedPath := ""
+func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
 	requestedDatastore := ""
 
 	// TODO: Implement all types of requests
-
 	switch req.Type {
 	case gnmi.GetRequest_ALL:
-		log.Infof("Type: ALL")
+		log.Info("Type: ALL")
 
 	case gnmi.GetRequest_CONFIG:
-		log.Infof("Type: CONFIG")
+		log.Info("Type: CONFIG")
 		requestedDatastore = "running"
 
 	case gnmi.GetRequest_STATE:
-		log.Infof("Type: STATE")
+		log.Info("Type: STATE")
 
 	case gnmi.GetRequest_OPERATIONAL:
-		log.Infof("Type: OPERATIONAL")
+		log.Info("Type: OPERATIONAL")
 
 	default:
 		log.Warn("Request type not recognized!")
 	}
 
-	// for _, path := range req.Path {
-	// 	for _, pathElem := range path.Elem {
-	// 		// log.Info(pathElem.Name)
-	// 		if requestedPath != "" {
-	// 			requestedPath += ">"
-	// 		}
-	// 		requestedPath += pathElem.Name
-	// 	}
-	// }
-
-	// return requestedPath, requestedDatastore, nil
-	return req.Path, requestedDatastore, nil
+	return requestedDatastore, nil
 }
 
 func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType) string {
@@ -96,7 +70,8 @@ func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_Da
 	for _, path := range paths {
 		for index, elem := range path.Elem {
 			if index == 0 {
-				cmd += "<filter>" // TODO: Look into filter types: <filter type="subtree"> etc.
+				// TODO: Look into filter types: <filter type="subtree"> etc.
+				cmd += "<filter>"
 				endOfCmd = "</filter>"
 			}
 			cmd += fmt.Sprintf("<%s", elem.Name)
@@ -150,13 +125,11 @@ func appendXMLTagOnType(cmd *string, format string,
 }
 
 func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
-	// log.Info("Converting XML to GNMI response...")
 	schema := netconfConv(xml)
 
 	jsonDump, err := json.Marshal(schema)
 	if err != nil {
 		log.Warn("Failed to serialize schema!", err)
-		// fmt.Println(err)
 	}
 
 	notifications := []*gnmi.Notification{
@@ -172,7 +145,7 @@ func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
 }
 
 // Converts XML to a Schema containing a slice of all the elements with namespaces and values.
-// TODO: Add "searching" to filter out all data except what the path is requesting.
+// TODO: Add "searching" to filter out all data except for what the path is requesting.
 func netconfConv(xmlString string) *types.Schema {
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
 	schema := &types.Schema{}
@@ -194,6 +167,8 @@ func netconfConv(xmlString string) *types.Schema {
 			newEntry.Name = tokType.Name.Local
 
 			if index > 0 {
+				// TODO: Fix this function, it currently won't add modules-state which is a module
+				// with exactly the same namespace as the previous module yang-library for state-data
 				if tokType.Name.Space != lastNamespace {
 					lastNamespace = tokType.Name.Space
 					newEntry.Namespace = lastNamespace
@@ -220,7 +195,6 @@ func netconfConv(xmlString string) *types.Schema {
 
 		default:
 			log.Warnf("Token type was not recognized with type: %v", tokType)
-			// fmt.Println(tokType)
 		}
 	}
 }
