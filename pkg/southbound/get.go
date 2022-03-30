@@ -1,10 +1,7 @@
 package southbound
 
 import (
-	"fmt"
-
 	"github.com/Juniper/go-netconf/netconf"
-	"github.com/openconfig/gnmi/proto/gnmi"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -75,39 +72,36 @@ func GetFullConfig() *netconf.RPCReply {
 
 // 	return reply.Data, nil
 // }
-func GetConfig(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType) (string, error) {
-	// secs := strings.Split(section, ">")
-	// nSecs := len(secs)
+func GetConfig(req string /*paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType*/) (string, error) {
+	// var cmd string
+	// var endOfCmd string
+	// appendXMLTagOnType(&cmd, format, reqType, true)
 
-	var cmd string
-	var endOfCmd string
-	appendXMLTagOnType(&cmd, format, reqType, true)
+	// for _, path := range paths {
+	// 	for index, elem := range path.Elem {
+	// 		if index == 0 {
+	// 			cmd += "<filter>" // TODO: Look into filter types: <filter type="subtree"> etc.
+	// 			endOfCmd = "</filter>"
+	// 		}
+	// 		cmd += fmt.Sprintf("<%s", elem.Name)
+	// 		endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
 
-	for _, path := range paths {
-		for index, elem := range path.Elem {
-			if index == 0 {
-				cmd += "<filter>" // type=\"subtree\">"
-				endOfCmd = "</filter>"
-			}
-			cmd += fmt.Sprintf("<%s", elem.Name)
-			endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
-			// for _, key := range elem.Key {
-			// 	log.Info(key)
-			// }
-			if namespace, ok := elem.Key["namespace"]; ok {
-				cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
-			} else if name, ok := elem.Key["name"]; ok {
-				cmd += fmt.Sprintf("><name>%s</name>", name)
-			} else {
-				cmd += ">"
-			}
-		}
-		cmd += endOfCmd
-	}
+	// 		// TODO: Add more keys if there are more, don't know yet.
+	// 		// Checks if namespace or name is defined before adding them to xml request.
+	// 		if namespace, ok := elem.Key["namespace"]; ok {
+	// 			cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
+	// 		} else if name, ok := elem.Key["name"]; ok {
+	// 			cmd += fmt.Sprintf("><name>%s</name>", name)
+	// 		} else {
+	// 			cmd += ">"
+	// 		}
+	// 	}
+	// 	cmd += endOfCmd
+	// }
 
-	appendXMLTagOnType(&cmd, format, reqType, false)
+	// appendXMLTagOnType(&cmd, format, reqType, false)
 
-	log.Info(cmd)
+	// log.Info(cmd)
 
 	sshConfig := &ssh.ClientConfig{
 		User:            "root",
@@ -125,7 +119,7 @@ func GetConfig(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataTy
 	// Close connetion to network device when this function is done executing
 	defer s.Close()
 
-	r := netconf.RawMethod(cmd)
+	r := netconf.RawMethod(req)
 	// fmt.Println(r)
 	reply, err := s.Exec(r)
 	if err != nil {
@@ -136,25 +130,25 @@ func GetConfig(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataTy
 	// return "", nil
 }
 
-func appendXMLTagOnType(cmd *string, format string,
-	reqType gnmi.GetRequest_DataType, startTags bool) {
+// func appendXMLTagOnType(cmd *string, format string,
+// 	reqType gnmi.GetRequest_DataType, startTags bool) {
 
-	switch reqType {
-	case gnmi.GetRequest_CONFIG:
-		if startTags {
-			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
-		} else {
-			*cmd += "</get-config>"
-		}
+// 	switch reqType {
+// 	case gnmi.GetRequest_CONFIG:
+// 		if startTags {
+// 			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
+// 		} else {
+// 			*cmd += "</get-config>"
+// 		}
 
-	case gnmi.GetRequest_STATE:
-		if startTags {
-			*cmd += "<get>"
-		} else {
-			*cmd += "</get>"
-		}
+// 	case gnmi.GetRequest_STATE:
+// 		if startTags {
+// 			*cmd += "<get>"
+// 		} else {
+// 			*cmd += "</get>"
+// 		}
 
-	default:
-		log.Warn("Did not recognize request type!")
-	}
-}
+// 	default:
+// 		log.Warn("Did not recognize request type!")
+// 	}
+// }

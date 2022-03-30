@@ -3,6 +3,7 @@ package dataConversion
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"strings"
 	"time"
 
@@ -26,8 +27,12 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 		log.Warnf("Failed to get request path and datastore, %v", err)
 	}
 
-	reply, err := sb.GetConfig(path, datastore, req.Type)
-	log.Info(reply)
+	xmlRequest := getXMLRequest(path, datastore, req.Type)
+
+	// reply, err := sb.GetConfig(path, datastore, req.Type)
+	// log.Info(reply)
+
+	reply, err := sb.GetConfig(xmlRequest)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
@@ -81,6 +86,61 @@ func getRequestedPath(req *gnmi.GetRequest) ([]*gnmi.Path, string, error) {
 
 	// return requestedPath, requestedDatastore, nil
 	return req.Path, requestedDatastore, nil
+}
+
+func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType) string {
+	var cmd string
+	var endOfCmd string
+	appendXMLTagOnType(&cmd, format, reqType, true)
+
+	for _, path := range paths {
+		for index, elem := range path.Elem {
+			if index == 0 {
+				cmd += "<filter>" // TODO: Look into filter types: <filter type="subtree"> etc.
+				endOfCmd = "</filter>"
+			}
+			cmd += fmt.Sprintf("<%s", elem.Name)
+			endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
+
+			// TODO: Add more keys if there are more, don't know yet.
+			// Checks if namespace or name is defined before adding them to xml request.
+			if namespace, ok := elem.Key["namespace"]; ok {
+				cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
+			} else if name, ok := elem.Key["name"]; ok {
+				cmd += fmt.Sprintf("><name>%s</name>", name)
+			} else {
+				cmd += ">"
+			}
+		}
+		cmd += endOfCmd
+	}
+
+	appendXMLTagOnType(&cmd, format, reqType, false)
+
+	return cmd
+}
+
+func appendXMLTagOnType(cmd *string, format string,
+	reqType gnmi.GetRequest_DataType, startTags bool) {
+
+	switch reqType {
+	case gnmi.GetRequest_CONFIG:
+		if startTags {
+			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
+		} else {
+			*cmd += "</get-config>"
+		}
+
+	case gnmi.GetRequest_STATE:
+		if startTags {
+			*cmd += "<get>"
+		} else {
+			*cmd += "</get>"
+		}
+
+	default:
+		log.Warn("Did not recognize request type!")
+	}
 }
 
 func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
