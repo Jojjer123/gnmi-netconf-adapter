@@ -87,7 +87,9 @@ func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_Da
 
 			if len(elem.Key) > 0 {
 				for key, value := range elem.Key {
-					cmd += fmt.Sprintf("<%s>%s</%s>", key, value, key)
+					if key != "namespace" {
+						cmd += fmt.Sprintf("<%s>%s</%s>", key, value, key)
+					}
 				}
 			}
 			// else if name, ok := elem.Key["name"]; ok {
