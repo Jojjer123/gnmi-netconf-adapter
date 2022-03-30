@@ -7,6 +7,7 @@ import (
 	"time"
 
 	sb "github.com/onosproject/gnmi-netconf-adapter/pkg/southbound"
+	types "github.com/onosproject/gnmi-netconf-adapter/pkg/types"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
@@ -20,14 +21,13 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 
 	// TODO: Parse req and send path to sb.GetConfig(), might be good to change the input-params
 	// in order to be more general and with less conversion of path.
-
 	path, datastore, err := getRequestedPath(req)
 	if err != nil {
 		log.Warnf("Failed to get request path and datastore, %v", err)
 	}
 
-	reply, err := sb.GetConfig(path, datastore)
-	log.Info(reply)
+	reply, err := sb.GetConfig(path, datastore, req.Type)
+	// log.Info(reply)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
@@ -44,16 +44,20 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 	return convertXMLtoGnmiResponse(reply)
 }
 
-func getRequestedPath(req *gnmi.GetRequest) (string, string, error) {
-	requestedPath := ""
+func getRequestedPath(req *gnmi.GetRequest) ([]*gnmi.Path, string, error) {
+	// requestedPath := ""
 	requestedDatastore := ""
+
+	// TODO: Implement all types of requests
 
 	switch req.Type {
 	case gnmi.GetRequest_ALL:
 		log.Infof("Type: ALL")
+
 	case gnmi.GetRequest_CONFIG:
 		log.Infof("Type: CONFIG")
 		requestedDatastore = "running"
+
 	case gnmi.GetRequest_STATE:
 		log.Infof("Type: STATE")
 
@@ -64,28 +68,18 @@ func getRequestedPath(req *gnmi.GetRequest) (string, string, error) {
 		log.Warn("Request type not recognized!")
 	}
 
-	for _, path := range req.Path {
-		for _, pathElem := range path.Elem {
-			// log.Info(pathElem.Name)
-			if requestedPath != "" {
-				requestedPath += ">"
-			}
-			requestedPath += pathElem.Name
-		}
-	}
+	// for _, path := range req.Path {
+	// 	for _, pathElem := range path.Elem {
+	// 		// log.Info(pathElem.Name)
+	// 		if requestedPath != "" {
+	// 			requestedPath += ">"
+	// 		}
+	// 		requestedPath += pathElem.Name
+	// 	}
+	// }
 
-	return requestedPath, requestedDatastore, nil
-}
-
-type Schema struct {
-	Entries []SchemaEntry
-}
-
-type SchemaEntry struct {
-	Name      string
-	Tag       string
-	Namespace string
-	Value     string
+	// return requestedPath, requestedDatastore, nil
+	return req.Path, requestedDatastore, nil
 }
 
 func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
@@ -112,11 +106,11 @@ func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
 
 // Converts XML to a Schema containing a slice of all the elements with namespaces and values.
 // TODO: Add "searching" to filter out all data except what the path is requesting.
-func netconfConv(xmlString string) *Schema {
+func netconfConv(xmlString string) *types.Schema {
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
-	schema := &Schema{}
+	schema := &types.Schema{}
 
-	var newEntry *SchemaEntry
+	var newEntry *types.SchemaEntry
 	var lastNamespace string
 
 	index := 0
@@ -129,7 +123,7 @@ func netconfConv(xmlString string) *Schema {
 
 		switch tokType := tok.(type) {
 		case xml.StartElement:
-			newEntry = &SchemaEntry{}
+			newEntry = &types.SchemaEntry{}
 			newEntry.Name = tokType.Name.Local
 
 			if index > 0 {
@@ -147,7 +141,7 @@ func netconfConv(xmlString string) *Schema {
 			index++
 
 		case xml.EndElement:
-			newEntry = &SchemaEntry{}
+			newEntry = &types.SchemaEntry{}
 			newEntry.Name = tokType.Name.Local
 			newEntry.Tag = "end"
 			schema.Entries = append(schema.Entries, *newEntry)
