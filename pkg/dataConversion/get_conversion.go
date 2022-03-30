@@ -101,7 +101,7 @@ func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_Da
 
 	appendXMLTagOnType(&cmd, format, reqType, false)
 
-	log.Info(cmd)
+	// log.Info(cmd)
 
 	return cmd
 }
