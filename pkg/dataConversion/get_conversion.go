@@ -81,16 +81,25 @@ func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_Da
 			// Checks if namespace or name is defined before adding them to xml request.
 			if namespace, ok := elem.Key["namespace"]; ok {
 				cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
-			} else if name, ok := elem.Key["name"]; ok {
-				cmd += fmt.Sprintf("><name>%s</name>", name)
 			} else {
 				cmd += ">"
 			}
+
+			if len(elem.Key) > 0 {
+				for key, value := range elem.Key {
+					cmd += fmt.Sprintf("<%s>%s</%s>", key, value, key)
+				}
+			}
+			// else if name, ok := elem.Key["name"]; ok {
+			// 	cmd += fmt.Sprintf("><name>%s</name>", name)
+			// }
 		}
 		cmd += endOfCmd
 	}
 
 	appendXMLTagOnType(&cmd, format, reqType, false)
+
+	log.Info(cmd)
 
 	return cmd
 }
