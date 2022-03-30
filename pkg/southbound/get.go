@@ -72,37 +72,8 @@ func GetFullConfig() *netconf.RPCReply {
 
 // 	return reply.Data, nil
 // }
-func GetConfig(req string /*paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType*/) (string, error) {
-	// var cmd string
-	// var endOfCmd string
-	// appendXMLTagOnType(&cmd, format, reqType, true)
 
-	// for _, path := range paths {
-	// 	for index, elem := range path.Elem {
-	// 		if index == 0 {
-	// 			cmd += "<filter>" // TODO: Look into filter types: <filter type="subtree"> etc.
-	// 			endOfCmd = "</filter>"
-	// 		}
-	// 		cmd += fmt.Sprintf("<%s", elem.Name)
-	// 		endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
-
-	// 		// TODO: Add more keys if there are more, don't know yet.
-	// 		// Checks if namespace or name is defined before adding them to xml request.
-	// 		if namespace, ok := elem.Key["namespace"]; ok {
-	// 			cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
-	// 		} else if name, ok := elem.Key["name"]; ok {
-	// 			cmd += fmt.Sprintf("><name>%s</name>", name)
-	// 		} else {
-	// 			cmd += ">"
-	// 		}
-	// 	}
-	// 	cmd += endOfCmd
-	// }
-
-	// appendXMLTagOnType(&cmd, format, reqType, false)
-
-	// log.Info(cmd)
-
+func GetConfig(req string) (string, error) {
 	sshConfig := &ssh.ClientConfig{
 		User:            "root",
 		Auth:            []ssh.AuthMethod{ssh.Password("")},
@@ -127,28 +98,4 @@ func GetConfig(req string /*paths []*gnmi.Path, format string, reqType gnmi.GetR
 	}
 
 	return reply.Data, nil
-	// return "", nil
 }
-
-// func appendXMLTagOnType(cmd *string, format string,
-// 	reqType gnmi.GetRequest_DataType, startTags bool) {
-
-// 	switch reqType {
-// 	case gnmi.GetRequest_CONFIG:
-// 		if startTags {
-// 			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
-// 		} else {
-// 			*cmd += "</get-config>"
-// 		}
-
-// 	case gnmi.GetRequest_STATE:
-// 		if startTags {
-// 			*cmd += "<get>"
-// 		} else {
-// 			*cmd += "</get>"
-// 		}
-
-// 	default:
-// 		log.Warn("Did not recognize request type!")
-// 	}
-// }

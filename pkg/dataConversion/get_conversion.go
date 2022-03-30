@@ -138,6 +138,12 @@ func appendXMLTagOnType(cmd *string, format string,
 			*cmd += "</get>"
 		}
 
+	case gnmi.GetRequest_ALL:
+		log.Info("Requests of type GetRequest_ALL is not yet implemented!")
+
+	case gnmi.GetRequest_OPERATIONAL:
+		log.Info("Requests of type GetRequest_OPERATIONAL is not yet implemented!")
+
 	default:
 		log.Warn("Did not recognize request type!")
 	}
