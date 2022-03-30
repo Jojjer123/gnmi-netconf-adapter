@@ -96,7 +96,7 @@ func GetConfig(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataTy
 			if namespace, ok := elem.Key["namespace"]; ok {
 				cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
 			} else if name, ok := elem.Key["name"]; ok {
-				cmd += fmt.Sprintf("<name>%s</name>", name)
+				cmd += fmt.Sprintf("><name>%s</name>", name)
 			} else {
 				cmd += ">"
 			}

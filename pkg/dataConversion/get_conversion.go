@@ -31,7 +31,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse { //*gnmi.GetRequ
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
-		log.Warnf("Response from switch was %v", err)
+		log.Warnf("Response from switch was: %v", err)
 		notifications := make([]*gnmi.Notification, 1)
 		ts := time.Now().UnixNano()
 
