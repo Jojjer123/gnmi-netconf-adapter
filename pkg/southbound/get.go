@@ -5,6 +5,7 @@ import (
 
 	"github.com/Juniper/go-netconf/netconf"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"golang.org/x/crypto/ssh"
 )
 
 // Requests the full configuration for the target "running"
@@ -107,31 +108,31 @@ func GetConfig(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataTy
 
 	log.Info(cmd)
 
-	// sshConfig := &ssh.ClientConfig{
-	// 	User:            "root",
-	// 	Auth:            []ssh.AuthMethod{ssh.Password("")},
-	// 	HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-	// }
-	// switchAddr := "192.168.0.1"
-	// //  Start connection to network device
-	// s, err := netconf.DialSSH(switchAddr, sshConfig)
+	sshConfig := &ssh.ClientConfig{
+		User:            "root",
+		Auth:            []ssh.AuthMethod{ssh.Password("")},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	switchAddr := "192.168.0.1"
+	//  Start connection to network device
+	s, err := netconf.DialSSH(switchAddr, sshConfig)
 
-	// if err != nil {
-	// 	log.Warn(err)
-	// }
+	if err != nil {
+		log.Warn(err)
+	}
 
-	// // Close connetion to network device when this function is done executing
-	// defer s.Close()
+	// Close connetion to network device when this function is done executing
+	defer s.Close()
 
-	// r := netconf.RawMethod(cmd)
-	// // fmt.Println(r)
-	// reply, err := s.Exec(r)
-	// if err != nil {
-	// 	return "", err
-	// }
+	r := netconf.RawMethod(cmd)
+	// fmt.Println(r)
+	reply, err := s.Exec(r)
+	if err != nil {
+		return "", err
+	}
 
-	// return reply.Data, nil
-	return "", nil
+	return reply.Data, nil
+	// return "", nil
 }
 
 func appendXMLTagOnType(cmd *string, format string,
