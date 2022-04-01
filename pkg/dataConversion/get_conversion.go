@@ -12,6 +12,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
+// TODO: Make it work for more than one path per request.
 func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	datastore, err := getRequestedDatastore(req)
 	if err != nil {
@@ -19,11 +20,11 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	}
 
 	xmlRequest := getXMLRequest(req.Path, datastore, req.Type)
-	log.Info(xmlRequest)
+	// log.Info(xmlRequest)
 
 	reply, err := sb.GetConfig(xmlRequest)
 
-	log.Info(reply)
+	// log.Info(reply)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
@@ -38,7 +39,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 		return &gnmi.GetResponse{Notification: notifications}
 	}
 
-	return convertXMLtoGnmiResponse(reply)
+	return convertXMLtoGnmiResponse(reply /*, req.Path[0]*/)
 }
 
 func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
@@ -139,8 +140,8 @@ func appendXMLTagOnType(cmd *string, format string,
 	}
 }
 
-func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
-	schema := netconfConv(xml)
+func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetResponse {
+	schema := netconfConv(xml /*, path*/)
 
 	jsonDump, err := json.Marshal(schema)
 	if err != nil {
@@ -161,7 +162,7 @@ func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
 
 // Converts XML to a Schema containing a slice of all the elements with namespaces and values.
 // TODO: Add "searching" to filter out all data except for what the path is requesting.
-func netconfConv(xmlString string) *types.Schema {
+func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
 	schema := &types.Schema{}
 
@@ -170,6 +171,8 @@ func netconfConv(xmlString string) *types.Schema {
 
 	var nsParser *types.NamespaceParser
 
+	// elementsToBeFound := path.Elem
+	// elementToBeFoundIndex := 0
 	index := 0
 	for {
 		tok, _ := decoder.Token()
@@ -184,8 +187,6 @@ func netconfConv(xmlString string) *types.Schema {
 			// fmt.Println(tokType.Name.Local)
 			newEntry = &types.SchemaEntry{}
 			newEntry.Name = tokType.Name.Local
-
-			// nsParser = &types.NamespaceParser{}
 
 			if index > 0 {
 				newNsParser := &types.NamespaceParser{
@@ -208,12 +209,6 @@ func netconfConv(xmlString string) *types.Schema {
 
 				nsParser = newNsParser
 
-				// TODO: Fix namespaces, it currently won't add modules-state which is a module
-				// with exactly the same namespace as the previous module yang-library for state-data
-				// if tokType.Name.Space != lastNamespace {
-				// 	lastNamespace = tokType.Name.Space
-				// 	newEntry.Namespace = lastNamespace
-				// }
 				newEntry.Tag = "start"
 			} else {
 				nsParser = &types.NamespaceParser{
@@ -221,13 +216,26 @@ func netconfConv(xmlString string) *types.Schema {
 					Parent:              nil,
 				}
 
-				// fmt.Printf("%s - %s\n", newEntry.Name, nsParser.LastParentNamespace)
-
-				// lastNamespace = tokType.Name.Space
+				// fmt.Printf("%s - %s\n", newEntry.Name, nsParser.LastParentNamespace)e
 				newEntry.Namespace = tokType.Name.Space
 			}
 
+			// var key string
+			// if elementToBeFoundIndex > 0 {
+			// 	for key, _ := range elementsToBeFound[elementToBeFoundIndex-1].Key {
+			// 		if key != "namespace" {
+			// 			break
+			// 		}
+			// 	}
+			// }
+
+			// if elementsToBeFound[elementToBeFoundIndex].Name == newEntry.Name || newEntry.Name == "data" || key == newEntry.Name {
 			schema.Entries = append(schema.Entries, *newEntry)
+			// 	if key == newEntry.Name {
+			// 		elementToBeFoundIndex -= 2
+			// 	}
+			// 	elementToBeFoundIndex++
+			// }
 			index++
 
 		case xml.EndElement:
@@ -237,7 +245,26 @@ func netconfConv(xmlString string) *types.Schema {
 			newEntry = &types.SchemaEntry{}
 			newEntry.Name = tokType.Name.Local
 			newEntry.Tag = "end"
+
+			// var key string
+			// if elementToBeFoundIndex > 0 {
+			// 	for key, _ := range elementsToBeFound[elementToBeFoundIndex].Key {
+			// 		if key != "namespace" {
+			// 			break
+			// 		}
+			// 	}
+			// }
+
+			// var searchIndex int
+			// if elementToBeFoundIndex-1 <= 0 {
+			// 	searchIndex = 0
+			// } else {
+			// 	searchIndex = elementToBeFoundIndex - 1
+			// }
+
+			// if elementsToBeFound[searchIndex].Name == newEntry.Name || newEntry.Name == "data" || key == newEntry.Name {
 			schema.Entries = append(schema.Entries, *newEntry)
+			// }
 			index++
 
 		case xml.CharData:
