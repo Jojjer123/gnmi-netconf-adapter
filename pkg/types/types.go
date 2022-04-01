@@ -10,3 +10,9 @@ type SchemaEntry struct {
 	Namespace string
 	Value     string
 }
+
+type NamespaceParser struct {
+	Parent              *NamespaceParser
+	Children            []*NamespaceParser
+	LastParentNamespace string
+}
