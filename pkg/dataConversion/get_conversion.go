@@ -21,6 +21,8 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	xmlRequest := getXMLRequest(req.Path, datastore, req.Type)
 	reply, err := sb.GetConfig(xmlRequest)
 
+	log.Info(reply)
+
 	// If southbound fails to get config, return empty response
 	if err != nil {
 		log.Warnf("Response from switch was: %v", err)
