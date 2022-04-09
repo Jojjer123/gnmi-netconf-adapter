@@ -78,6 +78,12 @@ func GetConfig(req string) (string, error) {
 
 	if err != nil {
 		log.Warn(err)
+
+		if s != nil {
+			defer s.Close()
+		}
+
+		return "", err
 	}
 
 	// Close connetion to network device when this function is done executing
