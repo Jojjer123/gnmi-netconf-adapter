@@ -49,6 +49,7 @@ func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
 	switch req.Type {
 	case gnmi.GetRequest_ALL:
 		log.Info("Type: ALL")
+		requestedDatastore = "running"
 
 	case gnmi.GetRequest_CONFIG:
 		log.Info("Type: CONFIG")
@@ -59,6 +60,7 @@ func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
 
 	case gnmi.GetRequest_OPERATIONAL:
 		log.Info("Type: OPERATIONAL")
+		requestedDatastore = "running"
 
 	default:
 		log.Warn("Request type not recognized!")
@@ -130,10 +132,20 @@ func appendXMLTagOnType(cmd *string, format string,
 		}
 
 	case gnmi.GetRequest_ALL:
-		log.Info("Requests of type GetRequest_ALL is not yet implemented!")
+		log.Info("Requests of type GetRequest_ALL is not yet tested, runs same as GetRequest_CONFIG!")
+		if startTags {
+			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
+		} else {
+			*cmd += "</get-config>"
+		}
 
 	case gnmi.GetRequest_OPERATIONAL:
-		log.Info("Requests of type GetRequest_OPERATIONAL is not yet implemented!")
+		log.Info("Requests of type GetRequest_OPERATIONAL is not yet tested, runs same as GetRequest_CONFIG!")
+		if startTags {
+			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
+		} else {
+			*cmd += "</get-config>"
+		}
 
 	default:
 		log.Warn("Did not recognize request type!")
