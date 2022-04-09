@@ -77,7 +77,7 @@ func GetConfig(req string) (string, error) {
 	s, err := netconf.DialSSH(switchAddr, sshConfig)
 
 	if err != nil {
-		log.Warn(err)
+		log.Warnf("Response from switch was: %v", err)
 
 		if s != nil {
 			defer s.Close()
