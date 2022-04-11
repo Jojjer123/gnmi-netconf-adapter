@@ -1,8 +1,6 @@
 package southbound
 
 import (
-	"fmt"
-
 	"github.com/Juniper/go-netconf/netconf"
 	"golang.org/x/crypto/ssh"
 )
@@ -99,8 +97,6 @@ func GetConfig(req string, target string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	fmt.Println(reply.Data)
 
 	return reply.Data, nil
 }
