@@ -22,7 +22,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	xmlRequest := getXMLRequest(req.Path, datastore, req.Type)
 	// log.Info(xmlRequest)
 
-	reply, err := sb.GetConfig(xmlRequest)
+	reply, err := sb.GetConfig(xmlRequest, req.Path[0].Target)
 
 	// log.Info(reply)
 

@@ -66,13 +66,15 @@ func GetFullConfig() *netconf.RPCReply {
 // 	return reply.Data, nil
 // }
 
-func GetConfig(req string) (string, error) {
+func GetConfig(req string, target string) (string, error) {
 	sshConfig := &ssh.ClientConfig{
 		User:            "root",
 		Auth:            []ssh.AuthMethod{ssh.Password("")},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	switchAddr := "192.168.0.1"
+	// switchAddr := "192.168.0.1"
+	switchAddr := target
+
 	//  Start connection to network device
 	s, err := netconf.DialSSH(switchAddr, sshConfig)
 
