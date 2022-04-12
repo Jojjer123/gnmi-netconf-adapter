@@ -204,9 +204,9 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 				}
 
 				fmt.Print(tokType.Name.Local)
-				fmt.Printf(" - %v", tokType.Attr)
+				fmt.Printf(" - %s , %s", tokType.Attr[0].Name, tokType.Attr[0].Value)
 
-				if nsParser.LastParentNamespace != tokType.Name.Space {
+				if nsParser.LastParentNamespace != tokType.Name.Space { // || nsParser.LastParentNamespace != tokType.Attr[]{
 					newNsParser.LastParentNamespace = tokType.Name.Space
 					newEntry.Namespace = tokType.Name.Space
 				}
