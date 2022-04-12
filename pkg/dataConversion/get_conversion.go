@@ -174,18 +174,15 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 }
 
 // Converts XML to a Schema containing a slice of all the elements with namespaces and values.
+// Consider reworking this to send back the original type, not a types.Schema.
 // TODO: Add "searching" to filter out all data except for what the path is requesting.
 func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
 	schema := &types.Schema{}
 
 	var newEntry *types.SchemaEntry
-	// var lastNamespace string
-
 	var nsParser *types.NamespaceParser
 
-	// elementsToBeFound := path.Elem
-	// elementToBeFoundIndex := 0
 	index := 0
 	for {
 		tok, _ := decoder.Token()
@@ -197,7 +194,6 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 
 		switch tokType := tok.(type) {
 		case xml.StartElement:
-			// fmt.Println(tokType.Name.Local)
 			newEntry = &types.SchemaEntry{}
 			newEntry.Name = tokType.Name.Local
 
@@ -207,21 +203,16 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 					LastParentNamespace: nsParser.LastParentNamespace,
 				}
 
-				// fmt.Print(tokType.Name.Local)
-				// fmt.Printf(" - %v", tokType.Attr)
+				fmt.Print(tokType.Name.Local)
+				fmt.Printf(" - %v", tokType.Attr)
 
 				if nsParser.LastParentNamespace != tokType.Name.Space {
 					newNsParser.LastParentNamespace = tokType.Name.Space
 					newEntry.Namespace = tokType.Name.Space
-					// fmt.Printf(" - %s\n", newNsParser.LastParentNamespace)
-				} else {
-					// fmt.Print("\n")
 				}
 
 				nsParser.Children = append(nsParser.Children, newNsParser)
-
 				nsParser = newNsParser
-
 				newEntry.Tag = "start"
 			} else {
 				nsParser = &types.NamespaceParser{
@@ -229,55 +220,20 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 					Parent:              nil,
 				}
 
-				// fmt.Printf("%s - %s\n", newEntry.Name, nsParser.LastParentNamespace)e
 				newEntry.Namespace = tokType.Name.Space
 			}
 
-			// var key string
-			// if elementToBeFoundIndex > 0 {
-			// 	for key, _ := range elementsToBeFound[elementToBeFoundIndex-1].Key {
-			// 		if key != "namespace" {
-			// 			break
-			// 		}
-			// 	}
-			// }
-
-			// if elementsToBeFound[elementToBeFoundIndex].Name == newEntry.Name || newEntry.Name == "data" || key == newEntry.Name {
 			schema.Entries = append(schema.Entries, *newEntry)
-			// 	if key == newEntry.Name {
-			// 		elementToBeFoundIndex -= 2
-			// 	}
-			// 	elementToBeFoundIndex++
-			// }
 			index++
 
 		case xml.EndElement:
-			// fmt.Printf("Exiting %s now\n", tokType.Name.Local)
 			nsParser = nsParser.Parent
 
 			newEntry = &types.SchemaEntry{}
 			newEntry.Name = tokType.Name.Local
 			newEntry.Tag = "end"
 
-			// var key string
-			// if elementToBeFoundIndex > 0 {
-			// 	for key, _ := range elementsToBeFound[elementToBeFoundIndex].Key {
-			// 		if key != "namespace" {
-			// 			break
-			// 		}
-			// 	}
-			// }
-
-			// var searchIndex int
-			// if elementToBeFoundIndex-1 <= 0 {
-			// 	searchIndex = 0
-			// } else {
-			// 	searchIndex = elementToBeFoundIndex - 1
-			// }
-
-			// if elementsToBeFound[searchIndex].Name == newEntry.Name || newEntry.Name == "data" || key == newEntry.Name {
 			schema.Entries = append(schema.Entries, *newEntry)
-			// }
 			index++
 
 		case xml.CharData:
@@ -289,77 +245,3 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 		}
 	}
 }
-
-// Converts XML to a Schema containing a slice of all the elements with namespaces and values.
-// TODO: Add "searching" to filter out all data except for what the path is requesting.
-// func netconfConv(xmlString string) *types.Schema {
-// 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
-// 	schema := &types.Schema{}
-
-// 	var newEntry *types.SchemaEntry
-// 	var lastNamespace string
-
-// 	var nsParser *types.NamespaceParser
-
-// 	index := 0
-// 	for {
-// 		tok, _ := decoder.Token()
-
-// 		if tok == nil {
-// 			return schema
-// 		}
-
-// 		switch tokType := tok.(type) {
-// 		case xml.StartElement:
-// 			newEntry = &types.SchemaEntry{}
-// 			newEntry.Name = tokType.Name.Local
-
-// 			if index > 0 {
-// 				newNsParser := &types.NamespaceParser{
-// 					Parent: nsParser,
-// 				}
-
-// 				if nsParser.LastParentNamespace != tokType.Name.Space {
-// 					newNsParser.LastParentNamespace = tokType.Name.Space
-// 					fmt.Printf("%s - %s", newEntry.Name, newNsParser.LastParentNamespace)
-// 				}
-
-// 				nsParser.Children = append(nsParser.Children, newNsParser)
-
-// 				nsParser = newNsParser
-
-// 				// TODO: Fix namespaces, it currently won't add modules-state which is a module
-// 				// with exactly the same namespace as the previous module yang-library for state-data
-// 				if tokType.Name.Space != lastNamespace {
-// 					lastNamespace = tokType.Name.Space
-// 					newEntry.Namespace = lastNamespace
-// 				}
-// 				newEntry.Tag = "start"
-// 			} else {
-// 				nsParser.LastParentNamespace = tokType.Name.Space
-// 				nsParser.Parent = nil
-// 				fmt.Printf("%s - %s", newEntry.Name, nsParser.LastParentNamespace)
-
-// 				lastNamespace = tokType.Name.Space
-// 				newEntry.Namespace = lastNamespace
-// 			}
-
-// 			schema.Entries = append(schema.Entries, *newEntry)
-// 			index++
-
-// 		case xml.EndElement:
-// 			newEntry = &types.SchemaEntry{}
-// 			newEntry.Name = tokType.Name.Local
-// 			newEntry.Tag = "end"
-// 			schema.Entries = append(schema.Entries, *newEntry)
-// 			index++
-
-// 		case xml.CharData:
-// 			bytes := xml.CharData(tokType)
-// 			schema.Entries[index-1].Value = string([]byte(bytes))
-
-// 		default:
-// 			log.Warnf("Token type was not recognized with type: %v", tokType)
-// 		}
-// 	}
-// }
