@@ -203,8 +203,10 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 					LastParentNamespace: nsParser.LastParentNamespace,
 				}
 
-				fmt.Print(tokType.Name.Local)
-				fmt.Printf(" - %s , %s", tokType.Attr[0].Name, tokType.Attr[0].Value)
+				if len(tokType.Attr) > 0 {
+					fmt.Print(tokType.Name.Local)
+					fmt.Printf(" - %s , %s", tokType.Attr[0].Name, tokType.Attr[0].Value)
+				}
 
 				if nsParser.LastParentNamespace != tokType.Name.Space { // || nsParser.LastParentNamespace != tokType.Attr[]{
 					newNsParser.LastParentNamespace = tokType.Name.Space
