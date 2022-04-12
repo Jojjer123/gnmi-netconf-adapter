@@ -203,12 +203,18 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 					LastParentNamespace: nsParser.LastParentNamespace,
 				}
 
+				// Could be used to add attribute namespaces, NOT tested.
 				if len(tokType.Attr) > 0 {
-					fmt.Print(tokType.Name.Local)
-					fmt.Printf(" - %s , %s", tokType.Attr[0].Name, tokType.Attr[0].Value)
+					// fmt.Print(tokType.Name.Local)
+					// fmt.Printf(" - %s , %s", tokType.Attr[0].Name, tokType.Attr[0].Value)
+
+					if nsParser.LastParentNamespace != tokType.Attr[0].Value {
+						// newNsParser.LastParentNamespace = tokType.Attr[0].Value
+						// newEntry.Namespace = tokType.Attr[0].Value
+					}
 				}
 
-				if nsParser.LastParentNamespace != tokType.Name.Space { // || nsParser.LastParentNamespace != tokType.Attr[]{
+				if nsParser.LastParentNamespace != tokType.Name.Space {
 					newNsParser.LastParentNamespace = tokType.Name.Space
 					newEntry.Namespace = tokType.Name.Space
 				}
