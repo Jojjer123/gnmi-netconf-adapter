@@ -1,14 +1,16 @@
 package dataConversion
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"encoding/xml"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
+
 	sb "github.com/onosproject/gnmi-netconf-adapter/pkg/southbound"
-	types "github.com/onosproject/gnmi-netconf-adapter/pkg/types"
+	"github.com/onosproject/gnmi-netconf-adapter/pkg/types"
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
@@ -157,16 +159,23 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 	adapterResponse := netconfConv(xml /*, path*/)
 	adapterResponse.Timestamp = time.Now().Unix()
 
-	jsonDump, err := json.Marshal(adapterResponse)
+	// IMPROVED MARSHALING
+	serializedData, err := proto.Marshal(adapterResponse)
 	if err != nil {
-		log.Warn("Failed to serialize schema!", err)
+		fmt.Printf("error marshaling response using proto: %v", err)
 	}
+
+	// jsonDump, err := json.Marshal(adapterResponse)
+	// if err != nil {
+	// 	log.Warn("Failed to serialize schema!", err)
+	// }
 
 	notifications := []*gnmi.Notification{
 		{
 			Timestamp: time.Now().UnixNano(),
 			Update: []*gnmi.Update{
-				{Val: &gnmi.TypedValue{Value: &gnmi.TypedValue_BytesVal{BytesVal: jsonDump}}},
+				{Val: &gnmi.TypedValue{Value: &gnmi.TypedValue_ProtoBytes{ProtoBytes: serializedData}}},
+				// {Val: &gnmi.TypedValue{Value: &gnmi.TypedValue_BytesVal{BytesVal: jsonDump}}},
 			},
 		},
 	}
