@@ -157,7 +157,7 @@ func appendXMLTagOnType(cmd *string, format string,
 
 func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetResponse {
 	adapterResponse := netconfConv(xml /*, path*/)
-	adapterResponse.Timestamp = time.Now().UnixMicro()
+	adapterResponse.Timestamp = time.Now().UnixNano()
 
 	// IMPROVED MARSHALING
 	serializedData, err := proto.Marshal(adapterResponse)
