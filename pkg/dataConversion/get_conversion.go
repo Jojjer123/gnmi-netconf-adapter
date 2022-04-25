@@ -154,9 +154,10 @@ func appendXMLTagOnType(cmd *string, format string,
 }
 
 func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetResponse {
-	schema := netconfConv(xml /*, path*/)
+	adapterResponse := netconfConv(xml /*, path*/)
+	adapterResponse.Timestamp = time.Now().Unix()
 
-	jsonDump, err := json.Marshal(schema)
+	jsonDump, err := json.Marshal(adapterResponse)
 	if err != nil {
 		log.Warn("Failed to serialize schema!", err)
 	}
@@ -176,9 +177,9 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 // Converts XML to a Schema containing a slice of all the elements with namespaces and values.
 // Consider reworking this to send back the original type, not a types.Schema.
 // TODO: Add "searching" to filter out all data except for what the path is requesting.
-func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
+func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.AdapterResponse {
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
-	schema := &types.Schema{}
+	adapterResponse := &types.AdapterResponse{}
 
 	var newEntry *types.SchemaEntry
 	var nsParser *types.NamespaceParser
@@ -189,7 +190,7 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 
 		if tok == nil {
 			fmt.Println("")
-			return schema
+			return adapterResponse
 		}
 
 		switch tokType := tok.(type) {
@@ -231,7 +232,7 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 				newEntry.Namespace = tokType.Name.Space
 			}
 
-			schema.Entries = append(schema.Entries, *newEntry)
+			adapterResponse.Entries = append(adapterResponse.Entries, *newEntry)
 			index++
 
 		case xml.EndElement:
@@ -241,12 +242,12 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.Schema {
 			newEntry.Name = tokType.Name.Local
 			newEntry.Tag = "end"
 
-			schema.Entries = append(schema.Entries, *newEntry)
+			adapterResponse.Entries = append(adapterResponse.Entries, *newEntry)
 			index++
 
 		case xml.CharData:
 			bytes := xml.CharData(tokType)
-			schema.Entries[index-1].Value = string([]byte(bytes))
+			adapterResponse.Entries[index-1].Value = string([]byte(bytes))
 
 		default:
 			fmt.Printf("Token type was not recognized with type: %v", tokType)

@@ -1,7 +1,8 @@
 package types
 
-type Schema struct {
-	Entries []SchemaEntry
+type AdapterResponse struct {
+	Entries   []SchemaEntry
+	Timestamp int64
 }
 
 type SchemaEntry struct {
