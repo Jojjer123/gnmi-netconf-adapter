@@ -21,16 +21,13 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 		log.Warnf("Failed to get datastore requested, %v", err)
 	}
 
-	startTimeReq := time.Now().UnixNano()
+	// startTimeReq := time.Now().UnixNano()
 	xmlRequest := getXMLRequest(req.Path, datastore, req.Type)
-	log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
-	// log.Info(xmlRequest)
+	// log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 
-	startTimeGetConf := time.Now().UnixNano()
+	// startTimeGetConf := time.Now().UnixNano()
 	reply, err := sb.GetConfig(xmlRequest, req.Path[0].Target)
-	log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
-
-	// log.Info(reply)
+	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
@@ -184,7 +181,7 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 // Consider reworking this to send back the original type, not a types.Schema.
 // TODO: Add "searching" to filter out all data except for what the path is requesting.
 func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.AdapterResponse {
-	startTime := time.Now().UnixNano()
+	// startTime := time.Now().UnixNano()
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
 	adapterResponse := &types.AdapterResponse{}
 
@@ -197,7 +194,7 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.AdapterResponse 
 
 		if tok == nil {
 			// fmt.Println("")
-			log.Infof("Time to convert from xml: %v\n", time.Now().UnixNano()-startTime)
+			// log.Infof("Time to convert from xml: %v\n", time.Now().UnixNano()-startTime)
 			return adapterResponse
 		}
 
