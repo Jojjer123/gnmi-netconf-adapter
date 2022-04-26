@@ -14,17 +14,21 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
-// TODO: Make it work for more than one path per request.
+// TODO: Make it work for more than only the first path per request.
 func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	datastore, err := getRequestedDatastore(req)
 	if err != nil {
 		log.Warnf("Failed to get datastore requested, %v", err)
 	}
 
+	startTimeReq := time.Now().UnixNano()
 	xmlRequest := getXMLRequest(req.Path, datastore, req.Type)
+	log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 	// log.Info(xmlRequest)
 
+	startTimeGetConf := time.Now().UnixNano()
 	reply, err := sb.GetConfig(xmlRequest, req.Path[0].Target)
+	log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 
 	// log.Info(reply)
 
@@ -48,21 +52,21 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
 	requestedDatastore := ""
 
-	// TODO: Implement all types of requests
+	// TODO: Test all types of requests.
 	switch req.Type {
 	case gnmi.GetRequest_ALL:
-		log.Info("Type: ALL")
+		// log.Info("Type: ALL")
 		requestedDatastore = "running"
 
 	case gnmi.GetRequest_CONFIG:
-		log.Info("Type: CONFIG")
+		// log.Info("Type: CONFIG")
 		requestedDatastore = "running"
 
 	case gnmi.GetRequest_STATE:
-		log.Info("Type: STATE")
+		// log.Info("Type: STATE")
 
 	case gnmi.GetRequest_OPERATIONAL:
-		log.Info("Type: OPERATIONAL")
+		// log.Info("Type: OPERATIONAL")
 		requestedDatastore = "running"
 
 	default:
@@ -159,23 +163,16 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 	adapterResponse := netconfConv(xml /*, path*/)
 	adapterResponse.Timestamp = time.Now().UnixNano()
 
-	// IMPROVED MARSHALING
 	serializedData, err := proto.Marshal(adapterResponse)
 	if err != nil {
 		fmt.Printf("error marshaling response using proto: %v", err)
 	}
-
-	// jsonDump, err := json.Marshal(adapterResponse)
-	// if err != nil {
-	// 	log.Warn("Failed to serialize schema!", err)
-	// }
 
 	notifications := []*gnmi.Notification{
 		{
 			Timestamp: time.Now().UnixNano(),
 			Update: []*gnmi.Update{
 				{Val: &gnmi.TypedValue{Value: &gnmi.TypedValue_ProtoBytes{ProtoBytes: serializedData}}},
-				// {Val: &gnmi.TypedValue{Value: &gnmi.TypedValue_BytesVal{BytesVal: jsonDump}}},
 			},
 		},
 	}
@@ -187,6 +184,7 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 // Consider reworking this to send back the original type, not a types.Schema.
 // TODO: Add "searching" to filter out all data except for what the path is requesting.
 func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.AdapterResponse {
+	startTime := time.Now().UnixNano()
 	decoder := xml.NewDecoder(strings.NewReader(xmlString))
 	adapterResponse := &types.AdapterResponse{}
 
@@ -198,7 +196,8 @@ func netconfConv(xmlString string /*, path *gnmi.Path*/) *types.AdapterResponse 
 		tok, _ := decoder.Token()
 
 		if tok == nil {
-			fmt.Println("")
+			// fmt.Println("")
+			log.Infof("Time to convert from xml: %v\n", time.Now().UnixNano()-startTime)
 			return adapterResponse
 		}
 
