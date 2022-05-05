@@ -94,8 +94,6 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 				</ethernet>
 			</interface>
 		</interfaces>
-	</filter>
-	<filter>
 		<lldp xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
 			<port>
 				<name>sw0p3</name>
