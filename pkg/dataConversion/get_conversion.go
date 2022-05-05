@@ -108,6 +108,7 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 	for pathIndex, path := range paths {
 		cmd = ""
 		endOfCmd = ""
+		appendXMLTagOnType(&cmd, format, reqType, true)
 		if pathIndex == 0 {
 			cmd += "<filter>"
 		} else if pathIndex == len(paths)-1 {
@@ -115,7 +116,6 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 		} else if pathIndex > 0 {
 			cmd += "</rpc><rpc>"
 		}
-		appendXMLTagOnType(&cmd, format, reqType, true)
 		for _, elem := range path.Elem {
 			// if index == 0 {
 			// 	// TODO: Look into filter types: <filter type="subtree"> etc.
@@ -144,7 +144,9 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 			// }
 		}
 		cmd += endOfCmd
-		appendXMLTagOnType(&cmd, format, reqType, false)
+		if pathIndex == len(paths)-1 {
+			appendXMLTagOnType(&cmd, format, reqType, false)
+		}
 		cmds = append(cmds, cmd)
 	}
 
