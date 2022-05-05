@@ -42,7 +42,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 
 		return &gnmi.GetResponse{Notification: notifications}
 	} else {
-		log.Infof("Reply: %v\n", reply)
+		// log.Infof("Reply: %v\n", reply)
 	}
 
 	return convertXMLtoGnmiResponse(reply /*, req.Path[0]*/)
@@ -80,49 +80,19 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 	var cmd string
 	var endOfCmd string
 
-	// 	return []string{`<get>
-	// 	<filter>
-	// 		<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
-	// 			<interface>
-	// 				<name>sw0p1</name>
-	// 				<ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
-	// 					<statistics>
-	// 						<frame>
-	// 							<in-total-frames></in-total-frames>
-	// 						</frame>
-	// 					</statistics>
-	// 				</ethernet>
-	// 			</interface>
-	// 		</interfaces>
-	// 		<lldp xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
-	// 			<port>
-	// 				<name>sw0p3</name>
-	// 				<tx-statistics>
-	// 					<total-frames></total-frames>
-	// 				</tx-statistics>
-	// 			</port>
-	// 		</lldp>
-	// 	</filter>
-	// </get>`}
-
 	for pathIndex, path := range paths {
 		cmd = ""
 		endOfCmd = ""
 
 		if pathIndex == 0 {
 			appendXMLTagOnType(&cmd, format, reqType, true)
+			// TODO: Look into filter types: <filter type="subtree"> etc.
 			cmd += "<filter>"
 		} else if pathIndex == len(paths)-1 {
 			endOfCmd = "</filter>"
-		} else if pathIndex > 0 {
-			cmd += "</rpc><rpc>"
 		}
 
 		for _, elem := range path.Elem {
-			// if index == 0 {
-			// 	// TODO: Look into filter types: <filter type="subtree"> etc.
-
-			// }
 			cmd += fmt.Sprintf("<%s", elem.Name)
 			endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
 
@@ -197,6 +167,7 @@ func appendXMLTagOnType(cmd *string, format string,
 }
 
 func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetResponse {
+	log.Infof("XML string: %v\n", xml)
 	adapterResponse := netconfConv(xml /*, path*/)
 	adapterResponse.Timestamp = time.Now().UnixNano()
 
@@ -213,6 +184,8 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 			},
 		},
 	}
+
+	log.Infof("Notifications: %v\n", notifications)
 
 	return &gnmi.GetResponse{Notification: notifications}
 }
