@@ -76,77 +76,81 @@ func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
 }
 
 func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType) []string {
-	// var cmds []string
-	// var cmd string
-	// var endOfCmd string
+	var cmds []string
+	var cmd string
+	var endOfCmd string
 
-	return []string{`<get>
-	<filter>
-		<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
-			<interface>
-				<name>sw0p1</name>
-				<ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
-					<statistics>
-						<frame>
-							<in-total-frames></in-total-frames>
-						</frame>
-					</statistics>
-				</ethernet>
-			</interface>
-		</interfaces>
-		<lldp xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
-			<port>
-				<name>sw0p3</name>
-				<tx-statistics>
-					<total-frames></total-frames>
-				</tx-statistics>
-			</port>
-		</lldp>
-	</filter>
-</get>`}
+	// 	return []string{`<get>
+	// 	<filter>
+	// 		<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+	// 			<interface>
+	// 				<name>sw0p1</name>
+	// 				<ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface">
+	// 					<statistics>
+	// 						<frame>
+	// 							<in-total-frames></in-total-frames>
+	// 						</frame>
+	// 					</statistics>
+	// 				</ethernet>
+	// 			</interface>
+	// 		</interfaces>
+	// 		<lldp xmlns="urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp">
+	// 			<port>
+	// 				<name>sw0p3</name>
+	// 				<tx-statistics>
+	// 					<total-frames></total-frames>
+	// 				</tx-statistics>
+	// 			</port>
+	// 		</lldp>
+	// 	</filter>
+	// </get>`}
 
-	// for pathIndex, path := range paths {
-	// 	cmd = ""
-	// 	if pathIndex > 0 {
-	// 		cmd += "</rpc><rpc>"
-	// 	}
-	// 	appendXMLTagOnType(&cmd, format, reqType, true)
-	// 	for index, elem := range path.Elem {
-	// 		if index == 0 {
-	// 			// TODO: Look into filter types: <filter type="subtree"> etc.
-	// 			cmd += "<filter>"
-	// 			endOfCmd = "</filter>"
-	// 		}
-	// 		cmd += fmt.Sprintf("<%s", elem.Name)
-	// 		endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
+	for pathIndex, path := range paths {
+		cmd = ""
+		endOfCmd = ""
+		if pathIndex == 0 {
+			cmd += "<filter>"
+		} else if pathIndex == len(paths)-1 {
+			endOfCmd = "</filter>"
+		} else if pathIndex > 0 {
+			cmd += "</rpc><rpc>"
+		}
+		appendXMLTagOnType(&cmd, format, reqType, true)
+		for _, elem := range path.Elem {
+			// if index == 0 {
+			// 	// TODO: Look into filter types: <filter type="subtree"> etc.
 
-	// 		// TODO: Add more keys if there are more, don't know yet.
-	// 		// Checks if namespace or name is defined before adding them to xml request.
-	// 		if namespace, ok := elem.Key["namespace"]; ok {
-	// 			cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
-	// 		} else {
-	// 			cmd += ">"
-	// 		}
+			// }
+			cmd += fmt.Sprintf("<%s", elem.Name)
+			endOfCmd = fmt.Sprintf("</%s>", elem.Name) + endOfCmd
 
-	// 		if len(elem.Key) > 0 {
-	// 			for key, value := range elem.Key {
-	// 				if key != "namespace" {
-	// 					cmd += fmt.Sprintf("<%s>%s</%s>", key, value, key)
-	// 				}
-	// 			}
-	// 		}
-	// 		// else if name, ok := elem.Key["name"]; ok {
-	// 		// 	cmd += fmt.Sprintf("><name>%s</name>", name)
-	// 		// }
-	// 	}
-	// 	cmd += endOfCmd
-	// 	appendXMLTagOnType(&cmd, format, reqType, false)
-	// 	cmds = append(cmds, cmd)
-	// }
+			// TODO: Add more keys if there are more, don't know yet.
+			// Checks if namespace or name is defined before adding them to xml request.
+			if namespace, ok := elem.Key["namespace"]; ok {
+				cmd += fmt.Sprintf(" xmlns=\"%s\">", namespace)
+			} else {
+				cmd += ">"
+			}
 
-	// // log.Info(cmds)
+			if len(elem.Key) > 0 {
+				for key, value := range elem.Key {
+					if key != "namespace" {
+						cmd += fmt.Sprintf("<%s>%s</%s>", key, value, key)
+					}
+				}
+			}
+			// else if name, ok := elem.Key["name"]; ok {
+			// 	cmd += fmt.Sprintf("><name>%s</name>", name)
+			// }
+		}
+		cmd += endOfCmd
+		appendXMLTagOnType(&cmd, format, reqType, false)
+		cmds = append(cmds, cmd)
+	}
 
-	// return cmds
+	// log.Info(cmds)
+
+	return cmds
 }
 
 func appendXMLTagOnType(cmd *string, format string,
