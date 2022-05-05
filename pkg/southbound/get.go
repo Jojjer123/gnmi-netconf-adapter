@@ -96,7 +96,7 @@ func GetConfig(req []string, target string) (string, error) {
 		requests = append(requests, netconf.RawMethod(r))
 	}
 
-	// fmt.Println(r)
+	log.Infof("Requests: %v\n", requests)
 	reply, err := s.Exec(requests...)
 	if err != nil {
 		return "", err
