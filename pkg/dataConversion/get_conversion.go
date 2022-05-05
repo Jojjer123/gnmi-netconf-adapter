@@ -80,8 +80,11 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 	var cmd string
 	var endOfCmd string
 
-	for _, path := range paths {
+	for pathIndex, path := range paths {
 		cmd = ""
+		if pathIndex > 0 {
+			cmd += "</rpc><rpc>"
+		}
 		appendXMLTagOnType(&cmd, format, reqType, true)
 		for index, elem := range path.Elem {
 			if index == 0 {
