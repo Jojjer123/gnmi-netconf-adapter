@@ -66,7 +66,7 @@ func GetFullConfig() *netconf.RPCReply {
 // 	return reply.Data, nil
 // }
 
-func GetConfig(req string, target string) (string, error) {
+func GetConfig(req []string, target string) (string, error) {
 	sshConfig := &ssh.ClientConfig{
 		User:            "root",
 		Auth:            []ssh.AuthMethod{ssh.Password("")},
@@ -91,9 +91,13 @@ func GetConfig(req string, target string) (string, error) {
 	// Close connetion to network device when this function is done executing
 	defer s.Close()
 
-	r := netconf.RawMethod(req)
+	var requests []netconf.RPCMethod
+	for _, r := range req {
+		requests = append(requests, netconf.RawMethod(r))
+	}
+
 	// fmt.Println(r)
-	reply, err := s.Exec(r)
+	reply, err := s.Exec(requests...)
 	if err != nil {
 		return "", err
 	}

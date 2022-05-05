@@ -22,11 +22,11 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	}
 
 	// startTimeReq := time.Now().UnixNano()
-	xmlRequest := getXMLRequest(req.Path, datastore, req.Type)
+	xmlRequests := getXMLRequests(req.Path, datastore, req.Type)
 	// log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 
 	// startTimeGetConf := time.Now().UnixNano()
-	reply, err := sb.GetConfig(xmlRequest, req.Path[0].Target)
+	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
 	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 
 	// If southbound fails to get config, return empty response
@@ -73,12 +73,14 @@ func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
 	return requestedDatastore, nil
 }
 
-func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType) string {
+func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType) []string {
+	var cmds []string
 	var cmd string
 	var endOfCmd string
-	appendXMLTagOnType(&cmd, format, reqType, true)
 
 	for _, path := range paths {
+		cmd = ""
+		appendXMLTagOnType(&cmd, format, reqType, true)
 		for index, elem := range path.Elem {
 			if index == 0 {
 				// TODO: Look into filter types: <filter type="subtree"> etc.
@@ -108,13 +110,13 @@ func getXMLRequest(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_Da
 			// }
 		}
 		cmd += endOfCmd
+		appendXMLTagOnType(&cmd, format, reqType, false)
+		cmds = append(cmds, cmd)
 	}
 
-	appendXMLTagOnType(&cmd, format, reqType, false)
+	log.Info(cmds)
 
-	// log.Info(cmd)
-
-	return cmd
+	return cmds
 }
 
 func appendXMLTagOnType(cmd *string, format string,
