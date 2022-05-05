@@ -27,12 +27,11 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 
 	// startTimeGetConf := time.Now().UnixNano()
 	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
-	log.Infof("Reply: %v\n", reply)
 	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
-		// log.Warnf("Response from switch was: %v", err)
+		log.Warnf("Response from switch was: %v", err)
 
 		notifications := make([]*gnmi.Notification, 1)
 		ts := time.Now().UnixNano()
@@ -42,6 +41,8 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 		}
 
 		return &gnmi.GetResponse{Notification: notifications}
+	} else {
+		log.Infof("Reply: %v\n", reply)
 	}
 
 	return convertXMLtoGnmiResponse(reply /*, req.Path[0]*/)
