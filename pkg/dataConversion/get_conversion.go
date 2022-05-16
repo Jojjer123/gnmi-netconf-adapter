@@ -18,7 +18,7 @@ import (
 func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	datastore, err := getRequestedDatastore(req)
 	if err != nil {
-		log.Warnf("Failed to get datastore requested, %v", err)
+		log.Errorf("Failed to get datastore requested, %v", err)
 	}
 
 	// startTimeReq := time.Now().UnixNano()
@@ -26,13 +26,13 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	// log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 
 	// startTimeGetConf := time.Now().UnixNano()
+	log.Infof("Request is: %v\n", req)
 	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
 	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
-		log.Infof("The reply was: %v\n", reply)
-		log.Errorf("Failed to get response: %v\n", err)
+		log.Errorf("Failed to get response from switch: %v\n", err)
 
 		notifications := make([]*gnmi.Notification, 1)
 		ts := time.Now().UnixNano()
