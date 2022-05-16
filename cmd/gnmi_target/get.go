@@ -42,7 +42,7 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 
 	response := dataConv.ConvertAndSendReq(req)
 
-	log.Infof("Response sent: %v\n", response)
+	// log.Infof("Response sent: %v\n", response)
 
 	return response, nil
 }
