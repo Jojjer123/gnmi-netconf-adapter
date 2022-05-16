@@ -89,7 +89,10 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 			appendXMLTagOnType(&cmd, format, reqType, true)
 			// TODO: Look into filter types: <filter type="subtree"> etc.
 			cmd += "<filter>"
+
+			log.Info(len(paths))
 		}
+
 		if pathIndex == len(paths)-1 {
 			endOfCmd = "</filter>"
 		}
