@@ -31,6 +31,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
+		log.Infof("The reply was: %v\n", reply)
 		log.Errorf("Failed to get response: %v\n", err)
 
 		notifications := make([]*gnmi.Notification, 1)
