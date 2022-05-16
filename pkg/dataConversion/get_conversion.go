@@ -26,7 +26,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	// log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 
 	// startTimeGetConf := time.Now().UnixNano()
-	log.Infof("XML request is: %v\n", xmlRequests)
+	// log.Infof("XML request is: %v\n", xmlRequests)
 	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
 	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 
@@ -170,7 +170,7 @@ func appendXMLTagOnType(cmd *string, format string,
 }
 
 func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetResponse {
-	log.Infof("XML string: %v\n", xml)
+	// log.Infof("XML string: %v\n", xml)
 	adapterResponse := netconfConv(xml /*, path*/)
 	adapterResponse.Timestamp = time.Now().UnixNano()
 
