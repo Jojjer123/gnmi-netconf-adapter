@@ -26,7 +26,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	// log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 
 	// startTimeGetConf := time.Now().UnixNano()
-	log.Infof("XML request is: %v\n", xmlRequests)
+	log.Info(xmlRequests)
 	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
 	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 	log.Info(reply)
