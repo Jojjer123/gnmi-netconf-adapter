@@ -26,7 +26,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	// log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 
 	// startTimeGetConf := time.Now().UnixNano()
-	log.Info(xmlRequests)
+	// log.Info(xmlRequests)
 	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
 	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
 	log.Info(reply)
@@ -87,6 +87,11 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 		endOfCmd = ""
 
 		if pathIndex == 0 {
+			// If there are no elements requested, the full configuration + state data is requested.
+			if len(path.Elem) == 0 {
+				return []string{"<get/>"}
+			}
+
 			appendXMLTagOnType(&cmd, format, reqType, true)
 			// TODO: Look into filter types: <filter type="subtree"> etc.
 			cmd += "<filter>"
