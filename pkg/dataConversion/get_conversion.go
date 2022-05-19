@@ -29,6 +29,7 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	// log.Infof("XML request is: %v\n", xmlRequests)
 	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
 	// log.Infof("Time to receive conf/counter: %v\n", time.Now().UnixNano()-startTimeGetConf)
+	log.Info(reply)
 
 	// If southbound fails to get config, return empty response
 	if err != nil {
