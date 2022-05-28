@@ -1,6 +1,8 @@
 package southbound
 
 import (
+	"time"
+
 	"github.com/Juniper/go-netconf/netconf"
 	"golang.org/x/crypto/ssh"
 )
@@ -97,7 +99,9 @@ func GetConfig(req []string, target string) (string, error) {
 	}
 
 	// log.Infof("Requests: %v\n", requests)
+	startTimeGetConf := time.Now().UnixNano()
 	reply, err := s.Exec(requests...)
+	log.Infof("Time to get response without session creation is: %v\n", time.Now().UnixNano()-startTimeGetConf)
 	if err != nil {
 		return "", err
 	}
