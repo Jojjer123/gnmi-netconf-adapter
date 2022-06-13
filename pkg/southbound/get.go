@@ -98,7 +98,6 @@ func GetConfig(req []string, target string) (string, error) {
 		requests = append(requests, netconf.RawMethod(r))
 	}
 
-	// log.Infof("Requests: %v\n", requests)
 	startTimeGetConf := time.Now().UnixNano()
 	reply, err := s.Exec(requests...)
 	log.Infof("Time to get response without session creation is: %v\n", time.Now().UnixNano()-startTimeGetConf)
