@@ -96,6 +96,7 @@ func GetConfig(req []string, target string) (string, error) {
 	var requests []netconf.RPCMethod
 	for _, r := range req {
 		requests = append(requests, netconf.RawMethod(r))
+		log.Infof("r = %v", r)
 	}
 
 	startTimeGetConf := time.Now().UnixNano()
