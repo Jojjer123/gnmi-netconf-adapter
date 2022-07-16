@@ -5,6 +5,8 @@ import (
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
+
+	sb "github.com/onosproject/gnmi-netconf-adapter/pkg/southbound"
 )
 
 var log = logging.GetLogger("main")
@@ -27,11 +29,11 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 
 		// TODO: Make target dynamic, currently only changes the running configuration.
 		// Create default start structure of XML.
-		switchSetReq = "<edit-config>"
-		switchSetReq += fmt.Sprintf("<target><%s/></target>", "running")
-		switchSetReq += fmt.Sprintf("<test-option>%s</test-option>", "test-then-set")
-		switchSetReq += fmt.Sprintf("<error-option>%s</error-option>", "rollback-on-error")
-		switchSetReq += "<config>"
+		// switchSetReq = "<edit-config>"
+		// switchSetReq += fmt.Sprintf("<target><%s/></target>", "running")
+		// switchSetReq += fmt.Sprintf("<test-option>%s</test-option>", "test-then-set")
+		// switchSetReq += fmt.Sprintf("<error-option>%s</error-option>", "rollback-on-error")
+		// switchSetReq += "<config>"
 
 		// For every update for a given switch, create partial XML req.
 		for _, update := range s {
@@ -44,12 +46,16 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 			switchSetReq += xmlReq
 		}
 
-		switchSetReq += "</config></edit-config>"
+		// switchSetReq += "</config></edit-config>"
 
 		switchRequests = append(switchRequests, switchSetReq)
 	}
 
 	log.Infof("Switch requests: %v", switchRequests)
+
+	response := sb.UpdateConfig(switchRequests[0])
+
+	log.Infof("Response: %v", response)
 
 	// if _, ok := switches[update.Path.Target]; !ok {
 	// 	switches[update.Path.Target] = getXMLRequests([]*gnmi.Path{update.Path}, "", gnmi.GetRequest_CONFIG)
