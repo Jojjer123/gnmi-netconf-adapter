@@ -57,6 +57,18 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 
 	log.Infof("Response: %v", response)
 
+	gnmiResp := netconfConv(response.Data)
+	log.Infof("adapter-response: %v", gnmiResp)
+
+	return &gnmi.SetResponse{
+		Response: []*gnmi.UpdateResult{
+			{
+				Path: &gnmi.Path{},
+				Op:   gnmi.UpdateResult_UPDATE,
+			},
+		},
+	}, nil
+
 	// if _, ok := switches[update.Path.Target]; !ok {
 	// 	switches[update.Path.Target] = getXMLRequests([]*gnmi.Path{update.Path}, "", gnmi.GetRequest_CONFIG)
 	// } else {
@@ -82,7 +94,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	// }
 
 	// return convertXMLtoGnmiResponse(reply), nil
-	return &gnmi.SetResponse{}, nil
+	// return &gnmi.SetResponse{}, nil
 }
 
 func getXmlReq(update *gnmi.Update) (string, error) {
