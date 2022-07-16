@@ -15,7 +15,7 @@ import (
 )
 
 // TODO: Make it work for more than only the first path per request.
-func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
+func ConvertAndSendGetReq(req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	datastore, err := getRequestedDatastore(req)
 	if err != nil {
 		log.Errorf("Failed to get datastore requested, %v", err)
@@ -25,13 +25,10 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 	xmlRequests := getXMLRequests(req.Path, datastore, req.Type)
 	// log.Infof("Time to create xmlReq: %v\n", time.Now().UnixNano()-startTimeReq)
 
-	startTimeGetConf := time.Now().UnixNano()
-	// log.Info(xmlRequests)
-	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
-	log.Infof("Time to receive conf/counter(s): %v\n", time.Now().UnixNano()-startTimeGetConf)
-	// log.Info(reply)
+	// startTimeGetConf := time.Now().UnixNano()
 
-	// If southbound fails to get config, return empty response
+	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
+	// log.Infof("Time to receive conf/counter(s): %v\n", time.Now().UnixNano()-startTimeGetConf)
 	if err != nil {
 		log.Errorf("Failed to get response from switch: %v\n", err)
 
@@ -42,12 +39,10 @@ func ConvertAndSendReq(req *gnmi.GetRequest) *gnmi.GetResponse {
 			Timestamp: ts,
 		}
 
-		return &gnmi.GetResponse{Notification: notifications}
-	} else {
-		// log.Infof("Reply: %v\n", reply)
+		return &gnmi.GetResponse{Notification: notifications}, err
 	}
 
-	return convertXMLtoGnmiResponse(reply /*, req.Path[0]*/)
+	return convertXMLtoGnmiResponse(reply), nil
 }
 
 func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
@@ -77,7 +72,7 @@ func getRequestedDatastore(req *gnmi.GetRequest) (string, error) {
 	return requestedDatastore, nil
 }
 
-func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_DataType) []string {
+func getXMLRequests(paths []*gnmi.Path, datastore string, reqType gnmi.GetRequest_DataType) []string {
 	var cmds []string
 	var cmd string
 	var endOfCmd string
@@ -92,7 +87,7 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 				return []string{"<get/>"}
 			}
 
-			appendXMLTagOnType(&cmd, format, reqType, true)
+			appendXMLTagOnType(&cmd, datastore, reqType, true)
 			// TODO: Look into filter types: <filter type="subtree"> etc.
 			cmd += "<filter type='subtree'>"
 		}
@@ -126,7 +121,7 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 		}
 		cmd += endOfCmd
 		if pathIndex == len(paths)-1 {
-			appendXMLTagOnType(&cmd, format, reqType, false)
+			appendXMLTagOnType(&cmd, datastore, reqType, false)
 		}
 		cmds = append(cmds, cmd)
 	}
@@ -136,13 +131,13 @@ func getXMLRequests(paths []*gnmi.Path, format string, reqType gnmi.GetRequest_D
 	return cmds
 }
 
-func appendXMLTagOnType(cmd *string, format string,
+func appendXMLTagOnType(cmd *string, datastore string,
 	reqType gnmi.GetRequest_DataType, startTags bool) {
 
 	switch reqType {
 	case gnmi.GetRequest_CONFIG:
 		if startTags {
-			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
+			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", datastore)
 		} else {
 			*cmd += "</get-config>"
 		}
@@ -157,7 +152,7 @@ func appendXMLTagOnType(cmd *string, format string,
 	case gnmi.GetRequest_ALL:
 		log.Info("Requests of type GetRequest_ALL is not yet tested, runs same as GetRequest_CONFIG!")
 		if startTags {
-			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
+			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", datastore)
 		} else {
 			*cmd += "</get-config>"
 		}
@@ -165,7 +160,7 @@ func appendXMLTagOnType(cmd *string, format string,
 	case gnmi.GetRequest_OPERATIONAL:
 		log.Info("Requests of type GetRequest_OPERATIONAL is not yet tested, runs same as GetRequest_CONFIG!")
 		if startTags {
-			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", format)
+			*cmd += fmt.Sprintf("<get-config><source><%s/></source>", datastore)
 		} else {
 			*cmd += "</get-config>"
 		}

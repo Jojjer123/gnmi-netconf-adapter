@@ -15,55 +15,29 @@
 package main
 
 import (
-	//"encoding/json"
-	//"strconv"
 	"github.com/google/gnxi/utils/credentials"
-	//dataConv "github.com/onosproject/gnmi-netconf-adapter/pkg/dataConversion"
+	dataConv "github.com/onosproject/gnmi-netconf-adapter/pkg/dataConversion"
 
-	//"fmt"
-	//"github.com/openconfig/ygot/ygot"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// type set_go ygot.GoStruct
-// Name string `yang:"Name,nomerge"`
-
-// Set overrides the Set func of gnmi.Target to provide user auth.
 func (s *server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
-	//checking pull behavior
 	msg, ok := credentials.AuthorizeUser(ctx)
 	if !ok {
 		log.Infof("denied a Set request: %v", msg)
 		return nil, status.Error(codes.PermissionDenied, msg)
 	}
 	log.Infof("allowed a Set request: %v", msg)
-	//log.Infof("Allowed set req..")
-	// var args *ygot.RFC7951JSONConfig
-	// args.AppendModuleName = true
-	// var set_go ygot.GoStruct
-	// ygot.ConstructIETFJSON(req, args)
 
-	//dataConv.ConvertSetReqtoXML(req)
+	// dataConv.ConvertSetReqtoXML(req)
+	response, err := dataConv.ConvertAndSendSetReq(req)
+	if err != nil {
+		log.Errorf("Failed converting request: %v", err)
+		return nil, err
+	}
 
-	// fmt.Println("ext number = ", len(req.GetExtension()))
-	// for i, e := range req.GetExtension() {
-	// 	fmt.Println(i, e.String())
-	// }
-	//log.Print(path)
-
-	//dataConv.Convert(req)
-	// log.Infof(req.String())
-	// path := upd.GetPath()
-	// fullPath := path
-	// if prefix != nil {
-	// 	fmt.Println("prefix exists")
-	// 	fullPath = gnmiFullPath(prefix, path)
-	// }
-	//log.Infof(upd.getva)
-	setResponse, err := s.Server.Set(ctx, req)
-	return setResponse, err
-	//	return nil, nil
+	return response, nil
 }

@@ -40,9 +40,11 @@ func (s *server) Get(ctx context.Context, req *gnmi.GetRequest) (*gnmi.GetRespon
 	// log.Infof("The incoming get request contains: %s", req.String())
 	// dataConv.ConvertGetReqtoXML(req)
 
-	response := dataConv.ConvertAndSendReq(req)
-
-	// log.Infof("Response sent: %v\n", response)
+	response, err := dataConv.ConvertAndSendGetReq(req)
+	if err != nil {
+		log.Errorf("Failed converting request: %v", err)
+		return nil, err
+	}
 
 	return response, nil
 }
