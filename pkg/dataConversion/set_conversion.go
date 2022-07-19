@@ -124,7 +124,9 @@ func getXmlReq(update *gnmi.Update) (string, error) {
 	}
 
 	// TODO: Get any kind of value, not just decimal values.
-	fmt.Printf("Type: %v\n", update.GetVal().GetAnyVal().ProtoReflect().Type())
+	fmt.Printf("Update.Value.TypeUrl: %v \n", update.GetVal().GetAnyVal().GetTypeUrl())
+	// (*devicechange.TypedValue)(update).Type
+	// fmt.Printf("Type: %v\n", update.GetVal().GetAnyVal().ProtoReflect().Type())
 	// switch update.GetVal().GetAnyVal().ProtoReflect().Type() {
 	// case devicechange.TypedDecimal.Type:
 
