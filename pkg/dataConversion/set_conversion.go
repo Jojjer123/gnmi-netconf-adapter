@@ -124,7 +124,8 @@ func getXmlReq(update *gnmi.Update) (string, error) {
 	}
 
 	// TODO: Get any kind of value, not just decimal values.
-	return xmlReqStart + fmt.Sprintf("%d", update.Val.GetDecimalVal().GetDigits()) + xmlReqEnd, nil
+	fmt.Println(fmt.Sprintf("%d", update.Val.GetDecimalVal().GetDigits()))
+	return xmlReqStart + xmlReqEnd, nil
 }
 
 // // Takes in a gnmi get request and returns a gnmi get response.
