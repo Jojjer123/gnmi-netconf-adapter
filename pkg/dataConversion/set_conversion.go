@@ -58,7 +58,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	log.Infof("Response: %v", response)
 
 	gnmiResp := netconfConv(response.Data)
-	log.Infof("adapter-response: %v", gnmiResp)
+	log.Infof("adapter-response: %v", gnmiResp.Entries)
 
 	return &gnmi.SetResponse{
 		Response: []*gnmi.UpdateResult{
@@ -123,8 +123,8 @@ func getXmlReq(update *gnmi.Update) (string, error) {
 		xmlReqEnd = fmt.Sprintf("</%s>", elem.Name) + xmlReqEnd
 	}
 
-	// TODO: Get any kind of value, not just string values.
-	return xmlReqStart + update.Val.GetStringVal() + xmlReqEnd, nil
+	// TODO: Get any kind of value, not just decimal values.
+	return xmlReqStart + fmt.Sprintf("%d", update.Val.GetDecimalVal().GetDigits()) + xmlReqEnd, nil
 }
 
 // // Takes in a gnmi get request and returns a gnmi get response.
