@@ -1,69 +1,53 @@
 package dataConversion
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"strings"
+	"strconv"
+
+	"github.com/openconfig/gnmi/proto/gnmi"
 )
 
-var xmlBuilder strings.Builder
+// Takes in a gnmi.Update and converts the value to a string
+func getValue(update *gnmi.Update) (string, error) {
+	var value string
 
-func json2Xml(jsonString string) string {
-	log.Infof("Trying to convert json to xml now...")
-	xmlBuilder.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>")
-	xmlBuilder.WriteString("\n<root>")
-
-	// Creating the maps for JSON
-	m := map[string]interface{}{}
-
-	// Parsing/Unmarshalling JSON encoding/json
-	err := json.Unmarshal([]byte(jsonString), &m)
-	if err != nil {
-		panic(err)
-	}
-
-	parseMap(m)
-
-	xmlBuilder.WriteString("\n</root>")
-
-	return xmlBuilder.String()
-}
-
-func parseMap(aMap map[string]interface{}) {
-	for key, val := range aMap {
-		switch concreteVal := val.(type) {
-		case map[string]interface{}:
-			fmt.Println(key)
-			parseMap(val.(map[string]interface{}))
-		case []interface{}:
-			fmt.Println(key)
-			var value = fmt.Sprintf("\n  <%v>", key)
-			xmlBuilder.WriteString(value)
-
-			parseArray(val.([]interface{}))
-
-			value = fmt.Sprintf("</%v>", key)
-			xmlBuilder.WriteString(value)
-		default:
-			var value = fmt.Sprintf("\n  <%v>%v</%v>", key, concreteVal, key)
-			xmlBuilder.WriteString(value)
+	// TODO: Get any kind of value, not just decimal values.
+	switch update.Val.Value.(type) {
+	case *gnmi.TypedValue_AnyVal:
+		value = update.GetVal().GetAnyVal().String()
+	case *gnmi.TypedValue_AsciiVal:
+		value = update.GetVal().GetAsciiVal()
+	case *gnmi.TypedValue_BoolVal:
+		if update.GetVal().GetBoolVal() {
+			value = "true"
+		} else {
+			value = "false"
 		}
+	case *gnmi.TypedValue_BytesVal:
+		value = string(update.GetVal().GetBytesVal())
+	case *gnmi.TypedValue_FloatVal:
+		value = fmt.Sprintf("%f", update.GetVal().GetFloatVal())
+	case *gnmi.TypedValue_DecimalVal:
+		value = strconv.FormatInt(update.GetVal().GetDecimalVal().GetDigits(), 10)
+	case *gnmi.TypedValue_IntVal:
+		value = strconv.Itoa(int(update.GetVal().GetIntVal()))
+	case *gnmi.TypedValue_JsonIetfVal:
+		value = string(update.GetVal().GetJsonIetfVal())
+	case *gnmi.TypedValue_JsonVal:
+		value = string(update.GetVal().GetJsonVal())
+	case *gnmi.TypedValue_LeaflistVal:
+		value = update.GetVal().GetLeaflistVal().String()
+	case *gnmi.TypedValue_ProtoBytes:
+		value = string(update.GetVal().GetProtoBytes())
+	case *gnmi.TypedValue_StringVal:
+		value = update.GetVal().GetStringVal()
+	case *gnmi.TypedValue_UintVal:
+		value = strconv.FormatUint(update.GetVal().GetUintVal(), 10)
+	default:
+		log.Errorf("Value \"%v\" is not defined", update.GetValue())
+		return "", errors.New("Value not defined")
 	}
-}
 
-func parseArray(anArray []interface{}) {
-	for _, val := range anArray {
-		switch concreteVal := val.(type) {
-		case map[string]interface{}:
-			xmlBuilder.WriteString("  ")
-			parseMap(val.(map[string]interface{}))
-			xmlBuilder.WriteString("\n  ")
-		case []interface{}:
-			parseArray(val.([]interface{}))
-			xmlBuilder.WriteString("\n")
-		default:
-			var value = fmt.Sprintf("%v", concreteVal)
-			xmlBuilder.WriteString(value)
-		}
-	}
+	return value, nil
 }

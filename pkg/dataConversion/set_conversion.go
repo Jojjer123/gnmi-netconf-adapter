@@ -55,6 +55,8 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 
 	response := sb.UpdateConfig(switchRequests[0])
 
+	// TODO: Convert XML response to gNMI
+
 	log.Infof("Response: %v", response)
 
 	gnmiResp := netconfConv(response.Data)
@@ -123,24 +125,14 @@ func getXmlReq(update *gnmi.Update) (string, error) {
 		xmlReqEnd = fmt.Sprintf("</%s>", elem.Name) + xmlReqEnd
 	}
 
-	// TODO: Get any kind of value, not just decimal values.
-	// fmt.Printf("Type: %v\n", update.GetVal().GetAnyVal().ProtoReflect().Type())
-	// switch update.GetVal().GetAnyVal().ProtoReflect().Type() {
-
-	switch update.GetVal().GetValue() {
-	case &gnmi.TypedValue_DecimalVal{}:
-		fmt.Println("Decimal value")
-	case &gnmi.TypedValue_BoolVal{}:
-		fmt.Println("Bool value")
-	case &gnmi.TypedValue_IntVal{}:
-		fmt.Println("Int value")
-	case &gnmi.TypedValue_StringVal{}:
-		fmt.Println("String value")
-	default:
-		fmt.Println("Unknown value")
+	val, err := getValue(update)
+	if err != nil {
+		log.Errorf("Failed getting value for path: %v", update.GetPath())
+		return "", err
 	}
 
-	return xmlReqStart + fmt.Sprintf("%d", update.Val.GetDecimalVal().GetDigits()) + xmlReqEnd, nil
+	return xmlReqStart + val + xmlReqEnd, nil
+	// return xmlReqStart + fmt.Sprintf("%d", update.Val.GetDecimalVal().GetDigits()) + xmlReqEnd, nil
 }
 
 // // Takes in a gnmi get request and returns a gnmi get response.
