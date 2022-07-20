@@ -41,13 +41,13 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 			var addTopLevelStartTag bool
 			var addTopLevelEndTag bool
 
-			// TODO: If next update request (if there any) uses the same "top-level" element, skip the end-tag, else use end-tag
-
 			// For first index, always add top level start tag, otherwise set only when new one occurs
 			if index == 0 {
 				addTopLevelStartTag = true
+				log.Infof("START TAG - Name: %s", updateList[index].Path.Elem[0].Name)
 			} else {
 				if update.Path.Elem[0].Name == updateList[index-1].Path.Elem[0].Name {
+					log.Infof("START TAG - Names: %s == %s", update.Path.Elem[0].Name, updateList[index-1].Path.Elem[0].Name)
 					addTopLevelStartTag = false
 				} else {
 					addTopLevelStartTag = true
@@ -58,6 +58,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 			if index < len(updateList)-1 {
 				// If the current and next paths have the same top level element
 				if update.Path.Elem[0].Name == updateList[index+1].Path.Elem[0].Name {
+					log.Infof("END TAG - Names: %s == %s", update.Path.Elem[0].Name, updateList[index+1].Path.Elem[0].Name)
 					addTopLevelEndTag = false
 				} else {
 					addTopLevelEndTag = true
@@ -66,6 +67,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 				addTopLevelEndTag = true
 			}
 
+			// TODO: If next update request (if there any) uses the same "top-level" element, skip the end-tag, else use end-tag
 			xmlReq, err := getXmlReq(update, addTopLevelStartTag, addTopLevelEndTag)
 			if err != nil {
 				log.Errorf("Failed converting update to xml: %v", err)
@@ -108,33 +110,6 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	// log.Infof("adapter-response: %v", gnmiResp.Entries)
 
 	return gnmiResponse, nil
-
-	// if _, ok := switches[update.Path.Target]; !ok {
-	// 	switches[update.Path.Target] = getXMLRequests([]*gnmi.Path{update.Path}, "", gnmi.GetRequest_CONFIG)
-	// } else {
-
-	// 	// updatedPaths := switches[update.Path.Target]
-	// 	// updatedPaths = append(updatedPaths, getXMLRequests([]*gnmi.Path{update.Path}, "", gnmi.GetRequest_CONFIG))
-	// }
-
-	// xmlRequests := getXMLRequests(req.Path, datastore, req.Type)
-
-	// reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
-	// if err != nil {
-	// 	log.Errorf("Failed to get response from switch: %v\n", err)
-
-	// 	notifications := make([]*gnmi.Notification, 1)
-	// 	ts := time.Now().UnixNano()
-
-	// 	notifications[0] = &gnmi.Notification{
-	// 		Timestamp: ts,
-	// 	}
-
-	// 	return &gnmi.SetResponse{}, err
-	// }
-
-	// return convertXMLtoGnmiResponse(reply), nil
-	// return &gnmi.SetResponse{}, nil
 }
 
 func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag bool) (string, error) {
@@ -142,8 +117,8 @@ func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag 
 	var xmlReqEnd string
 
 	for index, elem := range update.Path.Elem {
-		// log.Infof("elem: %v", elem)
 		if index == 0 && addTopLevelStartTag {
+			log.Infof("Adding top level start tag: %s", elem.Name)
 			xmlReqStart += fmt.Sprintf("<%s", elem.Name)
 
 			if namespace, ok := elem.Key["namespace"]; ok {
@@ -154,6 +129,20 @@ func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag 
 		}
 
 		if index == 0 && addTopLevelEndTag {
+			log.Infof("Adding top level end tag: %s", elem.Name)
+			xmlReqEnd = fmt.Sprintf("</%s>", elem.Name) + xmlReqEnd
+		}
+
+		// If not top level element, add element and namespace if it has one specified.
+		if index != 0 {
+			xmlReqStart += fmt.Sprintf("<%s", elem.Name)
+
+			if namespace, ok := elem.Key["namespace"]; ok {
+				xmlReqStart += fmt.Sprintf(" xmlns=\"%s\">", namespace)
+			} else {
+				xmlReqStart += ">"
+			}
+
 			xmlReqEnd = fmt.Sprintf("</%s>", elem.Name) + xmlReqEnd
 		}
 
