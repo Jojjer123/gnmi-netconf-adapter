@@ -2,6 +2,7 @@ package dataConversion
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
@@ -51,25 +52,34 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 		switchRequests = append(switchRequests, switchSetReq)
 	}
 
-	log.Infof("Switch requests: %v", switchRequests)
+	log.Infof("Requests: %v", switchRequests)
 
 	response := sb.UpdateConfig(switchRequests[0])
 
-	// TODO: Convert XML response to gNMI
-
-	log.Infof("Response: %v", response)
-
-	gnmiResp := netconfConv(response.Data)
-	log.Infof("adapter-response: %v", gnmiResp.Entries)
-
-	return &gnmi.SetResponse{
+	gnmiResponse := &gnmi.SetResponse{
 		Response: []*gnmi.UpdateResult{
 			{
 				Path: &gnmi.Path{},
-				Op:   gnmi.UpdateResult_UPDATE,
 			},
 		},
-	}, nil
+	}
+
+	// TODO: Convert XML response to gNMI
+	// If response.Data contains "<ok/>" or rather "ok" then it was successful, otherwise error occurred
+	if strings.Contains(response.Data, "ok") {
+		log.Info("Set request was successful")
+		gnmiResponse.Response[0].Op = gnmi.UpdateResult_UPDATE
+	} else {
+		log.Errorf("Set request failed in switch with error(s): %v", response.Errors)
+		gnmiResponse.Response[0].Op = gnmi.UpdateResult_INVALID
+	}
+
+	// log.Infof("Response: %v", response)
+
+	// gnmiResp := netconfConv(response.Data)
+	// log.Infof("adapter-response: %v", gnmiResp.Entries)
+
+	return gnmiResponse, nil
 
 	// if _, ok := switches[update.Path.Target]; !ok {
 	// 	switches[update.Path.Target] = getXMLRequests([]*gnmi.Path{update.Path}, "", gnmi.GetRequest_CONFIG)

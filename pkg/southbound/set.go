@@ -17,6 +17,7 @@ Example of xml that updates a queue-max-sdu tag.
 *		</interface>
 *	</interfaces>
  */
+
 // Updates the configuration accoring to the input xml for the target "running"
 func UpdateConfig(xmlChanges string) *netconf.RPCReply {
 
