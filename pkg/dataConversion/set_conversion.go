@@ -25,7 +25,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	var switchRequests []string
 
 	// For every switch with at least one update, convert to XML.
-	for _, s := range switches {
+	for _, updateList := range switches {
 		var switchSetReq string
 
 		// TODO: Make target dynamic, currently only changes the running configuration.
@@ -37,8 +37,36 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 		// switchSetReq += "<config>"
 
 		// For every update for a given switch, create partial XML req.
-		for _, update := range s {
-			xmlReq, err := getXmlReq(update)
+		for index, update := range updateList {
+			var addTopLevelStartTag bool
+			var addTopLevelEndTag bool
+
+			// TODO: If next update request (if there any) uses the same "top-level" element, skip the end-tag, else use end-tag
+
+			// For first index, always add top level start tag, otherwise set only when new one occurs
+			if index == 0 {
+				addTopLevelStartTag = true
+			} else {
+				if update.Path.Elem[0].Name == updateList[index-1].Path.Elem[0].Name {
+					addTopLevelStartTag = false
+				} else {
+					addTopLevelStartTag = true
+				}
+			}
+
+			// If there are more updates
+			if index < len(updateList)-1 {
+				// If the current and next paths have the same top level element
+				if update.Path.Elem[0].Name == updateList[index+1].Path.Elem[0].Name {
+					addTopLevelEndTag = false
+				} else {
+					addTopLevelEndTag = true
+				}
+			} else if index == len(updateList)-1 {
+				addTopLevelEndTag = true
+			}
+
+			xmlReq, err := getXmlReq(update, addTopLevelStartTag, addTopLevelEndTag)
 			if err != nil {
 				log.Errorf("Failed converting update to xml: %v", err)
 				return &gnmi.SetResponse{}, err
@@ -109,19 +137,24 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	// return &gnmi.SetResponse{}, nil
 }
 
-func getXmlReq(update *gnmi.Update) (string, error) {
+func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag bool) (string, error) {
 	var xmlReqStart string
 	var xmlReqEnd string
 
-	for _, elem := range update.Path.Elem {
+	for index, elem := range update.Path.Elem {
 		// log.Infof("elem: %v", elem)
+		if index == 0 && addTopLevelStartTag {
+			xmlReqStart += fmt.Sprintf("<%s", elem.Name)
 
-		xmlReqStart += fmt.Sprintf("<%s", elem.Name)
+			if namespace, ok := elem.Key["namespace"]; ok {
+				xmlReqStart += fmt.Sprintf(" xmlns=\"%s\">", namespace)
+			} else {
+				xmlReqStart += ">"
+			}
+		}
 
-		if namespace, ok := elem.Key["namespace"]; ok {
-			xmlReqStart += fmt.Sprintf(" xmlns=\"%s\">", namespace)
-		} else {
-			xmlReqStart += ">"
+		if index == 0 && addTopLevelEndTag {
+			xmlReqEnd = fmt.Sprintf("</%s>", elem.Name) + xmlReqEnd
 		}
 
 		if len(elem.Key) > 0 {
@@ -132,7 +165,6 @@ func getXmlReq(update *gnmi.Update) (string, error) {
 			}
 		}
 
-		xmlReqEnd = fmt.Sprintf("</%s>", elem.Name) + xmlReqEnd
 	}
 
 	val, err := getValue(update)
