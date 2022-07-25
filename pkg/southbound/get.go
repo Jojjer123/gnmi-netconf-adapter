@@ -8,8 +8,8 @@ import (
 )
 
 // Requests the full configuration for the target "running"
-func GetFullConfig() *netconf.RPCReply {
-	reply := sendRPCRequest(netconf.MethodGetConfig("running"))
+func GetFullConfig(switchAddr string) *netconf.RPCReply {
+	reply := sendRPCRequest(netconf.MethodGetConfig("running"), switchAddr)
 
 	return reply
 }
@@ -73,6 +73,7 @@ func GetConfig(req []string, target string) (string, error) {
 		User:            "root",
 		Auth:            []ssh.AuthMethod{ssh.Password("")},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         time.Second * 5,
 	}
 	// switchAddr := "192.168.0.1"
 	switchAddr := target

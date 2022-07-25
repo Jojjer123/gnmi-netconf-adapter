@@ -2,31 +2,32 @@ package southbound
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Juniper/go-netconf/netconf"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"golang.org/x/crypto/ssh"
 )
 
-const switchAddr = "192.168.0.1"
+// const switchAddr = "192.168.0.1"
 
 const editConfigXml = `<edit-config>
-<target><%s/></target>
-<default-operation>merge</default-operation>
-<error-option>rollback-on-error</error-option>
-<config>%s</config>
-</edit-config>`
+	<target><%s/></target>
+	<default-operation>merge</default-operation>
+	<error-option>rollback-on-error</error-option>
+	<config>%s</config>
+	</edit-config>`
 
 var log = logging.GetLogger("main")
 
 // Takes in an RPCMethod function and executes it, then returns the reply from the network device
-func sendRPCRequest(fn netconf.RPCMethod) *netconf.RPCReply {
+func sendRPCRequest(fn netconf.RPCMethod, switchAddr string) *netconf.RPCReply {
 	//  Define config for connection to network device
-	// log.Infof("sendRPC/sb/utils.go")
 	sshConfig := &ssh.ClientConfig{
 		User:            "root",
 		Auth:            []ssh.AuthMethod{ssh.Password("")},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         time.Second * 5,
 	}
 
 	// Start connection to network device

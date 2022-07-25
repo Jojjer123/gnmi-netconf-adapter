@@ -19,7 +19,7 @@ Example of xml that updates a queue-max-sdu tag.
  */
 
 // Updates the configuration accoring to the input xml for the target "running"
-func UpdateConfig(xmlChanges string) *netconf.RPCReply {
+func UpdateConfig(xmlChanges string, switchAddr string) *netconf.RPCReply {
 
 	//reply := sendRPCRequest(methodEditConfig("running", xmlChanges))
 	//reply := sendRPCRequest()
@@ -37,7 +37,7 @@ func UpdateConfig(xmlChanges string) *netconf.RPCReply {
 
 	// const changes = `<interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"><interface><name>sw0p5</name><enabled>false</enabled></interface></interfaces>`
 
-	reply := sendRPCRequest(methodEditConfig("running", xmlChanges))
+	reply := sendRPCRequest(methodEditConfig("running", xmlChanges), switchAddr)
 	// log.Infof(reply.Data)
 
 	return reply

@@ -3,7 +3,9 @@ package dataConversion
 import (
 	"fmt"
 	"strings"
+	"sync"
 
+	"github.com/Juniper/go-netconf/netconf"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
 
@@ -19,90 +21,137 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 
 	// For every update in set request, store updates for every switch (to group updates).
 	for _, update := range req.Update {
+		log.Infof("Update: %v", update)
+		log.Infof("Update.Path.Target: %s", update.Path.Target)
 		switches[update.Path.Target] = append(switches[update.Path.Target], update)
 	}
 
-	// Get switch requests from list of switches with updates
-	switchRequests, err := getSwitchRequests(switches)
-	if err != nil {
-		log.Errorf("Failed getting module updates: %v", err)
-		return &gnmi.SetResponse{}, err
+	var switchRequests = make(map[string]string)
+
+	// For each switch, create a switchRequest entry using switch address and switch request
+	for switchAddr, switchUpdates := range switches {
+		log.Infof("Switch address: %v", switchAddr)
+		// Get switch request in XML using all the updates for a switch
+		switchUpdateRequest, err := getSwitchRequest(switchUpdates)
+		if err != nil {
+			log.Errorf("Failed getting module updates: %v", err)
+			return &gnmi.SetResponse{}, err
+		}
+
+		log.Infof("Request: %v", switchUpdateRequest)
+		switchRequests[switchAddr] = switchUpdateRequest
 	}
 
-	log.Infof("Requests: %v", switchRequests)
+	var responses = make(map[string]*netconf.RPCReply)
+	var wg sync.WaitGroup
 
-	// TODO: Update config for every switch, and use target as switch address
+	// Update config for every switch
+	for addr, req := range switchRequests {
+		log.Infof("Addr: %s", addr)
+		// TODO: Make multithreaded
+		wg.Add(1)
+		go sendUpdate(req, addr, responses, &wg)
+		// responses = append(responses, sb.UpdateConfig(req, addr))
+	}
 
-	response := sb.UpdateConfig(switchRequests[0])
+	wg.Wait()
 
 	gnmiResponse := &gnmi.SetResponse{
-		Response: []*gnmi.UpdateResult{
-			{
-				Path: &gnmi.Path{},
-			},
-		},
+		Response: []*gnmi.UpdateResult{},
 	}
 
-	// Convert XML response to gNMI
-	// If response.Data contains "<ok/>" or rather "ok" then it was successful, otherwise error occurred
-	if strings.Contains(response.Data, "ok") {
-		log.Info("Set request was successful")
-		gnmiResponse.Response[0].Op = gnmi.UpdateResult_UPDATE
-	} else {
-		log.Errorf("Set request failed in switch with error(s): %v", response.Errors)
-		gnmiResponse.Response[0].Op = gnmi.UpdateResult_INVALID
+	// TODO: Check all responses if they were successful or not
+	for switchAddr, response := range responses {
+		// TODO: Check if response is ok, then get paths to all updates for that switch, add them
+		// into the gnmiResponse as separate updates
+
+		// Convert XML response to gNMI
+		// If response.Data contains "<ok/>" or rather "ok" then it was successful, otherwise error occurred
+		if strings.Contains(response.Data, "ok") {
+			log.Infof("Set request for switch %s was successful", switchAddr)
+
+			// TODO: For every path updated in the switch, get it, and build gnmi a new gnmi.UpdateResult
+			for _, update := range switches[switchAddr] {
+				gnmiResponse.Response = append(gnmiResponse.Response, &gnmi.UpdateResult{
+					Path: update.Path,
+					Op:   gnmi.UpdateResult_UPDATE,
+				})
+			}
+		} else {
+			log.Errorf("Set request failed in switch %s with error(s): %v", switchAddr, response.Errors)
+			for _, update := range switches[switchAddr] {
+				gnmiResponse.Response = append(gnmiResponse.Response, &gnmi.UpdateResult{
+					Path: update.Path,
+					Op:   gnmi.UpdateResult_INVALID,
+				})
+			}
+		}
 	}
+
+	log.Infof("gnmiResponse: %v", gnmiResponse)
+
+	// TODO: Send back one response for all set requests
 
 	return gnmiResponse, nil
 }
 
-func getSwitchRequests(switches map[string][]*gnmi.Update) ([]string, error) {
-	var switchRequests []string
+func sendUpdate(req string, addr string, responses map[string]*netconf.RPCReply, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	log.Infof("Sending update to switch: %s", addr)
+
+	response := sb.UpdateConfig(req, addr)
+
+	responses[addr] = response
+}
+
+func getSwitchRequest(switcheUpdates []*gnmi.Update) (string, error) {
+	// var switchRequests string
 
 	// For every switch with at least one update, convert to XML.
-	for _, updateList := range switches {
-		var addModuleStartTag bool
-		var addModuleEndTag bool
-		var switchSetReq string
+	// for _, updateList := range switches {
+	var addModuleStartTag bool
+	var addModuleEndTag bool
+	var switchSetReq string
 
-		// Map for each module, where the updates for the module is stored as xml in the value-string
-		var moduleUpdates = make(map[string]string)
+	// Map for each module, where the updates for the module is stored as xml in the value-string
+	var moduleUpdates = make(map[string]string)
 
-		for _, update := range updateList {
-			addModuleStartTag = false
-			addModuleEndTag = false
-			var ok bool
-
-			var existingVal string
-
-			if existingVal, ok = moduleUpdates[update.Path.Elem[0].Name]; !ok {
-				// Add with start tag
-				addModuleStartTag = true
-			} else {
-				// Add without start tag
-				addModuleStartTag = false
-			}
-
-			xmlReq, err := getXmlReq(update, addModuleStartTag, addModuleEndTag)
-			if err != nil {
-				log.Errorf("Failed converting update to xml: %v", err)
-				return []string{}, err
-			}
-
-			moduleUpdates[update.Path.Elem[0].Name] = existingVal + xmlReq
-		}
-
+	for _, update := range switcheUpdates {
 		addModuleStartTag = false
-		addModuleEndTag = true
+		addModuleEndTag = false
+		var ok bool
 
-		for module, update := range moduleUpdates {
-			switchSetReq += update + fmt.Sprintf("</%s>", module)
+		var existingVal string
+
+		if existingVal, ok = moduleUpdates[update.Path.Elem[0].Name]; !ok {
+			// Add with start tag
+			addModuleStartTag = true
+		} else {
+			// Add without start tag
+			addModuleStartTag = false
 		}
 
-		switchRequests = append(switchRequests, switchSetReq)
+		xmlReq, err := getXmlReq(update, addModuleStartTag, addModuleEndTag)
+		if err != nil {
+			log.Errorf("Failed converting update to xml: %v", err)
+			return "", err
+		}
+
+		moduleUpdates[update.Path.Elem[0].Name] = existingVal + xmlReq
 	}
 
-	return switchRequests, nil
+	addModuleStartTag = false
+	addModuleEndTag = true
+
+	for module, update := range moduleUpdates {
+		switchSetReq += update + fmt.Sprintf("</%s>", module)
+	}
+
+	// switchRequests = append(switchRequests, switchSetReq)
+	// }
+
+	return switchSetReq, nil
 }
 
 func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag bool) (string, error) {
