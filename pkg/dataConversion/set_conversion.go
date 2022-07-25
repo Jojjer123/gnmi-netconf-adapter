@@ -22,67 +22,16 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 		switches[update.Path.Target] = append(switches[update.Path.Target], update)
 	}
 
-	var switchRequests []string
-
-	// For every switch with at least one update, convert to XML.
-	for _, updateList := range switches {
-		var switchSetReq string
-
-		// TODO: Make target dynamic, currently only changes the running configuration.
-		// Create default start structure of XML.
-		// switchSetReq = "<edit-config>"
-		// switchSetReq += fmt.Sprintf("<target><%s/></target>", "running")
-		// switchSetReq += fmt.Sprintf("<test-option>%s</test-option>", "test-then-set")
-		// switchSetReq += fmt.Sprintf("<error-option>%s</error-option>", "rollback-on-error")
-		// switchSetReq += "<config>"
-
-		// For every update for a given switch, create partial XML req.
-		for index, update := range updateList {
-			var addTopLevelStartTag bool
-			var addTopLevelEndTag bool
-
-			// For first index, always add top level start tag, otherwise set only when new one occurs
-			if index == 0 {
-				addTopLevelStartTag = true
-				log.Infof("START TAG - Name: %s", updateList[index].Path.Elem[0].Name)
-			} else {
-				if update.Path.Elem[0].Name == updateList[index-1].Path.Elem[0].Name {
-					log.Infof("START TAG - Names: %s == %s", update.Path.Elem[0].Name, updateList[index-1].Path.Elem[0].Name)
-					addTopLevelStartTag = false
-				} else {
-					addTopLevelStartTag = true
-				}
-			}
-
-			// If there are more updates
-			if index < len(updateList)-1 {
-				// If the current and next paths have the same top level element
-				if update.Path.Elem[0].Name == updateList[index+1].Path.Elem[0].Name {
-					log.Infof("END TAG - Names: %s == %s", update.Path.Elem[0].Name, updateList[index+1].Path.Elem[0].Name)
-					addTopLevelEndTag = false
-				} else {
-					addTopLevelEndTag = true
-				}
-			} else if index == len(updateList)-1 {
-				addTopLevelEndTag = true
-			}
-
-			// TODO: If next update request (if there any) uses the same "top-level" element, skip the end-tag, else use end-tag
-			xmlReq, err := getXmlReq(update, addTopLevelStartTag, addTopLevelEndTag)
-			if err != nil {
-				log.Errorf("Failed converting update to xml: %v", err)
-				return &gnmi.SetResponse{}, err
-			}
-
-			switchSetReq += xmlReq
-		}
-
-		// switchSetReq += "</config></edit-config>"
-
-		switchRequests = append(switchRequests, switchSetReq)
+	// Get switch requests from list of switches with updates
+	switchRequests, err := getSwitchRequests(switches)
+	if err != nil {
+		log.Errorf("Failed getting module updates: %v", err)
+		return &gnmi.SetResponse{}, err
 	}
 
 	log.Infof("Requests: %v", switchRequests)
+
+	// TODO: Update config for every switch, and use target as switch address
 
 	response := sb.UpdateConfig(switchRequests[0])
 
@@ -94,7 +43,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 		},
 	}
 
-	// TODO: Convert XML response to gNMI
+	// Convert XML response to gNMI
 	// If response.Data contains "<ok/>" or rather "ok" then it was successful, otherwise error occurred
 	if strings.Contains(response.Data, "ok") {
 		log.Info("Set request was successful")
@@ -104,12 +53,56 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 		gnmiResponse.Response[0].Op = gnmi.UpdateResult_INVALID
 	}
 
-	// log.Infof("Response: %v", response)
-
-	// gnmiResp := netconfConv(response.Data)
-	// log.Infof("adapter-response: %v", gnmiResp.Entries)
-
 	return gnmiResponse, nil
+}
+
+func getSwitchRequests(switches map[string][]*gnmi.Update) ([]string, error) {
+	var switchRequests []string
+
+	// For every switch with at least one update, convert to XML.
+	for _, updateList := range switches {
+		var addModuleStartTag bool
+		var addModuleEndTag bool
+		var switchSetReq string
+
+		// Map for each module, where the updates for the module is stored as xml in the value-string
+		var moduleUpdates = make(map[string]string)
+
+		for _, update := range updateList {
+			addModuleStartTag = false
+			addModuleEndTag = false
+			var ok bool
+
+			var existingVal string
+
+			if existingVal, ok = moduleUpdates[update.Path.Elem[0].Name]; !ok {
+				// Add with start tag
+				addModuleStartTag = true
+			} else {
+				// Add without start tag
+				addModuleStartTag = false
+			}
+
+			xmlReq, err := getXmlReq(update, addModuleStartTag, addModuleEndTag)
+			if err != nil {
+				log.Errorf("Failed converting update to xml: %v", err)
+				return []string{}, err
+			}
+
+			moduleUpdates[update.Path.Elem[0].Name] = existingVal + xmlReq
+		}
+
+		addModuleStartTag = false
+		addModuleEndTag = true
+
+		for module, update := range moduleUpdates {
+			switchSetReq += update + fmt.Sprintf("</%s>", module)
+		}
+
+		switchRequests = append(switchRequests, switchSetReq)
+	}
+
+	return switchRequests, nil
 }
 
 func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag bool) (string, error) {
@@ -118,7 +111,7 @@ func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag 
 
 	for index, elem := range update.Path.Elem {
 		if index == 0 && addTopLevelStartTag {
-			log.Infof("Adding top level start tag: %s", elem.Name)
+			// log.Infof("Adding top level start tag: %s", elem.Name)
 			xmlReqStart += fmt.Sprintf("<%s", elem.Name)
 
 			if namespace, ok := elem.Key["namespace"]; ok {
@@ -129,7 +122,7 @@ func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag 
 		}
 
 		if index == 0 && addTopLevelEndTag {
-			log.Infof("Adding top level end tag: %s", elem.Name)
+			// log.Infof("Adding top level end tag: %s", elem.Name)
 			xmlReqEnd = fmt.Sprintf("</%s>", elem.Name) + xmlReqEnd
 		}
 
@@ -163,113 +156,4 @@ func getXmlReq(update *gnmi.Update, addTopLevelStartTag bool, addTopLevelEndTag 
 	}
 
 	return xmlReqStart + val + xmlReqEnd, nil
-	// return xmlReqStart + fmt.Sprintf("%d", update.Val.GetDecimalVal().GetDigits()) + xmlReqEnd, nil
 }
-
-// // Takes in a gnmi get request and returns a gnmi get response.
-// func ConvertSetReqtoXML(req *gnmi.SetRequest) { //*gnmi.GetRequest, typeOfRequest string) {
-
-// 	/************************************************************
-// 	Implementation of data conversion should be implemented here.
-// 	*************************************************************/
-// 	log.Infof(req.String())
-// 	global_counter := -1
-// 	var xmlPath string
-// 	for _, upd := range req.GetUpdate() {
-// 		for i, e := range upd.GetPath().Elem {
-// 			fmt.Println(i, e.GetName())
-// 			fmt.Println(i, e.GetKey())
-// 		}
-// 		calculateXmlPath(&xmlPath, &global_counter, upd, upd.GetPath().Elem)
-// 	}
-// 	fmt.Println(xmlPath)
-
-// 	// Initiate southbound NETCONF client, sending the xml
-// 	reply := sb.UpdateConfig(xmlPath).Data
-
-// 	// Logs the reply, before sending back the response a conversion from xml to json should be implemented.
-// 	log.Infof(reply)
-
-// 	// Simulated response.
-// 	//notifications := make([]*gnmi.Notification, 1)
-// 	//prefix := req.GetPrefix()
-// 	//ts := time.Now().UnixNano()
-
-// 	//notifications[0] = &gnmi.Notification{
-// 	//	Timestamp: ts,
-// 	//	Prefix:    prefix,
-// 	//}
-
-// 	//resp := &gnmi.GetResponse{Notification: notifications}
-// 	//return resp
-// 	//return reply
-// }
-
-// func GetValue(upd *gnmi.Update) string {
-
-// 	fmt.Println(upd.GetVal().String())
-// 	bool_val := upd.GetVal().GetBoolVal()
-// 	fmt.Println(bool_val)
-// 	// log.Infof(string(upd.GetVal().GetJsonIetfVal()))
-// 	// log.Infof(upd.GetVal().GetStringVal())
-// 	// var editValue interface{}
-// 	// editValue = make(map[string]interface{})
-// 	// err := json.Unmarshal(upd.GetVal().GetJsonVal(), &editValue)
-// 	// if err != nil {
-// 	// 	status.Errorf(codes.Unknown, "invalid value %s", err)
-// 	// }
-
-// 	//return upd.GetVal().String()
-// 	return strconv.FormatBool(bool_val)
-// }
-
-// func addMapValues(count int, path *string, elem []*gnmi.PathElem) {
-
-// 	for key, value := range elem[count].GetKey() {
-// 		*path += `<` + key + `>` + value + `</` + key + `>`
-// 	}
-// }
-
-// func addNamespace(count int, path *string, elem []*gnmi.PathElem) {
-
-// 	switch elem[count].GetName() {
-// 	case "interfaces":
-// 		*path += ` xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"`
-
-// 	case "max-sdu-table":
-// 		*path += ` xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched"`
-
-// 	default:
-// 		return
-// 	}
-// }
-
-// func calculateXmlPath(path *string, global_counter *int, upd *gnmi.Update, elem []*gnmi.PathElem) {
-
-// 	*global_counter++
-// 	if *global_counter >= len(elem) {
-// 		return
-// 	}
-
-// 	local_counter := *global_counter
-// 	*path += `<` + elem[local_counter].GetName()
-// 	addNamespace(local_counter, path, elem)
-// 	*path += `>`
-// 	if len(elem[local_counter].GetKey()) > 0 {
-// 		addMapValues(local_counter, path, elem)
-// 	}
-// 	if *global_counter == len(elem)-1 {
-// 		*path += GetValue(upd)
-// 	}
-// 	calculateXmlPath(path, global_counter, upd, elem)
-// 	*path += `</` + elem[local_counter].GetName() + `>`
-
-// }
-
-// // func gnmiFullPath(prefix, path *gnmi.Path) *gnmi.Path {
-// // 	fullPath := &gnmi.Path{Origin: path.Origin}
-// // 	if path.GetElem() != nil {
-// // 		fullPath.Elem = append(prefix.GetElem(), path.GetElem()...)
-// // 	}
-// // 	return fullPath
-// // }
