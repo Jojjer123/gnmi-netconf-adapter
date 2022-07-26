@@ -27,6 +27,8 @@ func ConvertAndSendGetReq(req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 
 	// startTimeGetConf := time.Now().UnixNano()
 
+	// log.Infof("Should have sent the following reqs to %s : %v", req.Path[0].Target, xmlRequests)
+	// reply := ""
 	reply, err := sb.GetConfig(xmlRequests, req.Path[0].Target)
 	// log.Infof("Time to receive conf/counter(s): %v\n", time.Now().UnixNano()-startTimeGetConf)
 	if err != nil {

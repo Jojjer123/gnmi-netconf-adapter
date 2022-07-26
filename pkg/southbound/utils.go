@@ -2,7 +2,6 @@ package southbound
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/Juniper/go-netconf/netconf"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
@@ -27,26 +26,22 @@ func sendRPCRequest(fn netconf.RPCMethod, switchAddr string) *netconf.RPCReply {
 		User:            "root",
 		Auth:            []ssh.AuthMethod{ssh.Password("")},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         time.Second * 5,
 	}
 
 	// Start connection to network device
 	s, err := netconf.DialSSH(switchAddr, sshConfig)
-
-	var reply *netconf.RPCReply
 	if err != nil {
 		log.Warn(err)
 		return nil
-	} else {
-		// Executes the function passed as fn
-		reply, err = s.Exec(fn)
+	}
 
-		if err != nil {
-			log.Warn(err)
-		}
+	// Close connetion to network device when this function is done executing
+	defer s.Close()
 
-		// Close connetion to network device when this function is done executing
-		defer s.Close()
+	// Executes the function passed as fn
+	reply, err := s.Exec(fn)
+	if err != nil {
+		log.Warn(err)
 	}
 
 	return reply

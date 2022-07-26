@@ -22,7 +22,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 	// For every update in set request, store updates for every switch (to group updates).
 	for _, update := range req.Update {
 		log.Infof("Update: %v", update)
-		log.Infof("Update.Path.Target: %s", update.Path.Target)
+		// log.Infof("Update.Path.Target: %s", update.Path.Target)
 		switches[update.Path.Target] = append(switches[update.Path.Target], update)
 	}
 
@@ -30,7 +30,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 
 	// For each switch, create a switchRequest entry using switch address and switch request
 	for switchAddr, switchUpdates := range switches {
-		log.Infof("Switch address: %v", switchAddr)
+		// log.Infof("Switch address: %v", switchAddr)
 		// Get switch request in XML using all the updates for a switch
 		switchUpdateRequest, err := getSwitchRequest(switchUpdates)
 		if err != nil {
@@ -38,7 +38,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 			return &gnmi.SetResponse{}, err
 		}
 
-		log.Infof("Request: %v", switchUpdateRequest)
+		// log.Infof("Request: %v", switchUpdateRequest)
 		switchRequests[switchAddr] = switchUpdateRequest
 	}
 
@@ -47,7 +47,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 
 	// Update config for every switch
 	for addr, req := range switchRequests {
-		log.Infof("Addr: %s", addr)
+		// log.Infof("Addr: %s", addr)
 		// TODO: Make multithreaded
 		wg.Add(1)
 		go sendUpdate(req, addr, responses, &wg)
@@ -62,6 +62,9 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 
 	// TODO: Check all responses if they were successful or not
 	for switchAddr, response := range responses {
+		if response == nil {
+			continue
+		}
 		// TODO: Check if response is ok, then get paths to all updates for that switch, add them
 		// into the gnmiResponse as separate updates
 
@@ -98,7 +101,7 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 func sendUpdate(req string, addr string, responses map[string]*netconf.RPCReply, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	log.Infof("Sending update to switch: %s", addr)
+	// log.Infof("Sending update to switch: %s", addr)
 
 	response := sb.UpdateConfig(req, addr)
 

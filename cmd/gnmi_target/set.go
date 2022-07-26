@@ -32,7 +32,6 @@ func (s *server) Set(ctx context.Context, req *gnmi.SetRequest) (*gnmi.SetRespon
 	}
 	log.Infof("allowed a Set request: %v", msg)
 
-	// dataConv.ConvertSetReqtoXML(req)
 	response, err := dataConv.ConvertAndSendSetReq(req)
 	if err != nil {
 		log.Errorf("Failed converting request: %v", err)
