@@ -34,14 +34,66 @@ func ConvertAndSendGetReq(req *gnmi.GetRequest) (*gnmi.GetResponse, error) {
 	if err != nil {
 		log.Errorf("Failed to get response from switch: %v\n", err)
 
-		notifications := make([]*gnmi.Notification, 1)
-		ts := time.Now().UnixNano()
+		// TEMP RETURNED VALUE FOR DEBUGGING MONITOR
 
-		notifications[0] = &gnmi.Notification{
-			Timestamp: ts,
+		// <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces"><interface><name>sw0p1</name><ethernet xmlns="urn:ieee:std:802.3:yang:ieee802-ethernet-interface"><statistics><frame><in-total-frames></in-total-frames></frame></statistics></ethernet></interface></interfaces>
+
+		// resp := &gnmi.GetResponse{
+		// 	Notification: []*gnmi.Notification{
+		// 		{
+		// 			Timestamp: time.Now().UnixNano(),
+		// 			Update: []*gnmi.Update{
+		// 				{
+		// 					Path: &gnmi.Path{
+		// 						Elem: []*gnmi.PathElem{
+		// 							{
+		// 								Name: "interfaces",
+		// 								Key:  map[string]string{"namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces"},
+		// 							},
+		// 							{
+		// 								Name: "interface",
+		// 								Key:  map[string]string{"name": "sw0p1"},
+		// 							},
+		// 							{
+		// 								Name: "ethernet",
+		// 								Key:  map[string]string{"namespace": "urn:ieee:std:802.3:yang:ieee802-ethernet-interface"},
+		// 							},
+		// 							{
+		// 								Name: "statistics",
+		// 								Key:  map[string]string{},
+		// 							},
+		// 							{
+		// 								Name: "frame",
+		// 								Key:  map[string]string{},
+		// 							},
+		// 							{
+		// 								Name: "in-total-frames",
+		// 								Key:  map[string]string{},
+		// 							},
+		// 						},
+		// 					},
+		// 					Val: &gnmi.TypedValue{
+		// 						Value: &gnmi.TypedValue_IntVal{
+		// 							IntVal: 255,
+		// 						},
+		// 					},
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// }
+
+		// return resp, nil
+
+		resp := &gnmi.GetResponse{
+			Notification: []*gnmi.Notification{
+				{
+					Timestamp: time.Now().UnixNano(),
+				},
+			},
 		}
 
-		return &gnmi.GetResponse{Notification: notifications}, err
+		return resp, err
 	}
 
 	return convertXMLtoGnmiResponse(reply), nil
@@ -172,9 +224,9 @@ func appendXMLTagOnType(cmd *string, datastore string,
 	}
 }
 
-func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetResponse {
-	// log.Infof("XML string: %v\n", xml)
-	adapterResponse := netconfConv(xml /*, path*/)
+// TODO: Change conversion from xml to gNMI, should not convert into "adapterResponse", would be better with correct gNMI response.
+func convertXMLtoGnmiResponse(xml string) *gnmi.GetResponse {
+	adapterResponse := netconfConv(xml)
 	adapterResponse.Timestamp = time.Now().UnixNano()
 
 	serializedData, err := proto.Marshal(adapterResponse)
@@ -190,8 +242,6 @@ func convertXMLtoGnmiResponse(xml string /*, path *gnmi.Path*/) *gnmi.GetRespons
 			},
 		},
 	}
-
-	// log.Infof("Notifications: %v\n", notifications)
 
 	return &gnmi.GetResponse{Notification: notifications}
 }
