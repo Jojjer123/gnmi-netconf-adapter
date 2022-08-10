@@ -91,7 +91,8 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 		}
 	}
 
-	log.Infof("gnmiResponse: %v", gnmiResponse)
+	// log.Infof("gnmiResponse: %v", gnmiResponse)
+	log.Info("gnmiResponse arrived now")
 
 	// TODO: Send back one response for all set requests
 
@@ -102,6 +103,8 @@ func sendUpdate(req string, addr string, responses map[string]*netconf.RPCReply,
 	defer wg.Done()
 
 	// log.Infof("Sending update to switch: %s", addr)
+
+	log.Infof("Request sent: %v", req)
 
 	response := sb.UpdateConfig(req, addr)
 
