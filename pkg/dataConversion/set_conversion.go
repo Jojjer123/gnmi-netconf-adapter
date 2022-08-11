@@ -138,7 +138,7 @@ func sendUpdate(req string, addr string, responses map[string]*netconf.RPCReply,
 
 	// log.Infof("Sending update to switch: %s", addr)
 
-	log.Infof("Request sent: %v", req)
+	log.Infof("Request to switch %s sent: %v", addr, req)
 
 	response := sb.UpdateConfig(req, addr)
 
