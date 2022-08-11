@@ -8,41 +8,63 @@ import (
 	"github.com/Juniper/go-netconf/netconf"
 	"github.com/onosproject/onos-lib-go/pkg/logging"
 	"github.com/openconfig/gnmi/proto/gnmi"
+	pb "github.com/openconfig/gnmi/proto/gnmi"
 
 	sb "github.com/onosproject/gnmi-netconf-adapter/pkg/southbound"
 )
 
 var log = logging.GetLogger("main")
 
+type Update struct {
+	Update *pb.Update
+}
+
 // TODO: Make it work for more than only the first path per request.
 func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
-	// Create a map holding groups of update requests for every switch targeted.
-	switches := make(map[string][]*gnmi.Update)
+	// // Create a map holding groups of update requests for every switch targeted.
+	// switches := make(map[string][]*gnmi.Update)
 
-	// For every update in set request, store updates for every switch (to group updates).
+	// // For every update in set request, store updates for every switch (to group updates).
+	// for _, update := range req.Update {
+	// 	// log.Infof("Update: %v", update)
+	// 	// log.Infof("Update.Path.Target: %s", update.Path.Target)
+	// 	switches[update.Path.Target] = append(switches[update.Path.Target], update)
+	// }
+
+	// Grouped updates based on targets
+	var targetGroups = map[string][]Update{}
+
+	// For all updates, group by target
 	for _, update := range req.Update {
-		log.Infof("Update: %v", update)
-		// log.Infof("Update.Path.Target: %s", update.Path.Target)
-		switches[update.Path.Target] = append(switches[update.Path.Target], update)
-	}
-
-	var switchRequests = make(map[string]string)
-
-	// For each switch, create a switchRequest entry using switch address and switch request
-	for switchAddr, switchUpdates := range switches {
-		// log.Infof("Switch address: %v", switchAddr)
-		// Get switch request in XML using all the updates for a switch
-		switchUpdateRequest, err := getSwitchRequest(switchUpdates)
-		if err != nil {
-			log.Errorf("Failed getting module updates: %v", err)
-			return &gnmi.SetResponse{}, err
+		var newUpdate = Update{
+			Update: update,
 		}
-
-		// log.Infof("Request: %v", switchUpdateRequest)
-		switchRequests[switchAddr] = switchUpdateRequest
+		targetGroups[update.Path.Target] = append(targetGroups[update.Path.Target], newUpdate)
 	}
 
-	var responses = make(map[string]*netconf.RPCReply)
+	var switchRequests = map[string]string{}
+
+	// For each update group
+	for addr, group := range targetGroups {
+		req := buildXml(group)
+		switchRequests[addr] = req
+	}
+
+	// // For each switch, create a switchRequest entry using switch address and switch request
+	// for switchAddr, switchUpdates := range switches {
+	// 	// log.Infof("Switch address: %v", switchAddr)
+	// 	// Get switch request in XML using all the updates for a switch
+	// 	switchUpdateRequest, err := getSwitchRequest(switchUpdates)
+	// 	if err != nil {
+	// 		log.Errorf("Failed getting module updates: %v", err)
+	// 		return &gnmi.SetResponse{}, err
+	// 	}
+
+	// 	// log.Infof("Request: %v", switchUpdateRequest)
+	// 	switchRequests[switchAddr] = switchUpdateRequest
+	// }
+
+	var responses = map[string]*netconf.RPCReply{}
 	var wg sync.WaitGroup
 
 	// Update config for every switch
@@ -74,20 +96,32 @@ func ConvertAndSendSetReq(req *gnmi.SetRequest) (*gnmi.SetResponse, error) {
 			log.Infof("Set request for switch %s was successful", switchAddr)
 
 			// TODO: For every path updated in the switch, get it, and build gnmi a new gnmi.UpdateResult
-			for _, update := range switches[switchAddr] {
+			for _, update := range targetGroups[switchAddr] {
 				gnmiResponse.Response = append(gnmiResponse.Response, &gnmi.UpdateResult{
-					Path: update.Path,
+					Path: update.Update.Path,
 					Op:   gnmi.UpdateResult_UPDATE,
 				})
 			}
+			// for _, update := range switches[switchAddr] {
+			// 	gnmiResponse.Response = append(gnmiResponse.Response, &gnmi.UpdateResult{
+			// 		Path: update.Path,
+			// 		Op:   gnmi.UpdateResult_UPDATE,
+			// 	})
+			// }
 		} else {
 			log.Errorf("Set request failed in switch %s with error(s): %v", switchAddr, response.Errors)
-			for _, update := range switches[switchAddr] {
+			for _, update := range targetGroups[switchAddr] {
 				gnmiResponse.Response = append(gnmiResponse.Response, &gnmi.UpdateResult{
-					Path: update.Path,
+					Path: update.Update.Path,
 					Op:   gnmi.UpdateResult_INVALID,
 				})
 			}
+			// for _, update := range switches[switchAddr] {
+			// 	gnmiResponse.Response = append(gnmiResponse.Response, &gnmi.UpdateResult{
+			// 		Path: update.Path,
+			// 		Op:   gnmi.UpdateResult_INVALID,
+			// 	})
+			// }
 		}
 	}
 
@@ -111,7 +145,7 @@ func sendUpdate(req string, addr string, responses map[string]*netconf.RPCReply,
 	responses[addr] = response
 }
 
-func getSwitchRequest(switcheUpdates []*gnmi.Update) (string, error) {
+func getSwitchRequest(switchUpdates []*gnmi.Update) (string, error) {
 	// var switchRequests string
 
 	// For every switch with at least one update, convert to XML.
@@ -123,7 +157,7 @@ func getSwitchRequest(switcheUpdates []*gnmi.Update) (string, error) {
 	// Map for each module, where the updates for the module is stored as xml in the value-string
 	var moduleUpdates = make(map[string]string)
 
-	for _, update := range switcheUpdates {
+	for _, update := range switchUpdates {
 		addModuleStartTag = false
 		addModuleEndTag = false
 		var ok bool
